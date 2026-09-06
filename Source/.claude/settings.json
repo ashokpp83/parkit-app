@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet run *)",
+      "Bash(echo \"Backend PID: $!\")",
+      "Bash(npm start *)",
+      "Bash(echo \"Frontend PID: $!\")",
+      "Bash(cat /tmp/parkit-backend.log 2>/dev/null || echo \"\\(empty\\)\")",
+      "Read(//tmp/**)",
+      "Bash(cat /tmp/parkit-frontend.log 2>/dev/null || echo \"\\(empty\\)\")",
+      "Bash(netstat -ano)",
+      "Bash(taskkill /PID 43452 /F)",
+      "Bash(cmd /c \"taskkill /PID 43452 /F\")",
+      "Bash(cmd //c \"taskkill /PID 43452 /F 2>&1\")",
+      "Bash(sleep 8 && cat /tmp/parkit-backend.log)",
+      "Bash(sleep 12 && cat /tmp/parkit-backend.log)",
+      "Bash(sleep 15 && cat /tmp/parkit-backend.log)",
+      "Bash(curl -s -X POST http://localhost:5255/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"emailOrPhone\":\"driver@parkit.app\",\"password\":\"Passw0rd!\"}')",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:5255/api/v1/auth/register -H 'Content-Type: application/json' -d '{\"fullName\":\"Test User\",\"email\":\"test@example.com\",\"phoneNumber\":\"+919999999999\",\"password\":\"Passw0rd!\",\"role\":0}')"
+    ]
+  }
+}

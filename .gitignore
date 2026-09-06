@@ -1,0 +1,28 @@
+# .NET
+**/bin/
+**/obj/
+*.user
+
+# Visual Studio
+.vs/
+
+# Angular / Node
+**/node_modules/
+Source/parkit-ui/dist/
+Source/parkit-ui/.angular/
+npm-debug.log*
+
+# Android / Capacitor / Gradle
+Source/parkit-ui/android/.gradle/
+Source/parkit-ui/android/.idea/
+Source/parkit-ui/android/.kotlin/
+Source/parkit-ui/android/app/build/
+Source/parkit-ui/android/build/
+Source/parkit-ui/android/capacitor-cordova-android-plugins/build/
+Source/parkit-ui/android/local.properties
+Source/parkit-ui/android/**/*.apk
+Source/parkit-ui/android/**/*.aab
+
+# System files
+.DS_Store
+Thumbs.db
