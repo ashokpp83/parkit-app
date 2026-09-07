@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://replace-with-your-api-host/api/v1',
+  apiBaseUrl: 'https://parkit-app-l73a.onrender.com/api/v1',
 };

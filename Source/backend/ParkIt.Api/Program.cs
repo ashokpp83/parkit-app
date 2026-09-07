@@ -38,7 +38,8 @@ builder.Services.AddCors(o => o.AddPolicy(CorsPolicy, p => p
         "http://localhost:4200",
         "http://localhost:4201",
         "http://localhost:4300",
-        "http://localhost:8100"
+        "http://localhost:8100",
+        "https://localhost"
     }.Concat(allowedOrigins).Distinct()])
     .AllowAnyHeader()
     .AllowAnyMethod()));
