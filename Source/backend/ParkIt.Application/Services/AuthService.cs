@@ -50,6 +50,25 @@ public class AuthService
         return await IssueTokensAsync(user, ct);
     }
 
+    public async Task<AuthResponse> LoginWithOtpAsync(OtpLoginRequest req, CancellationToken ct = default)
+    {
+        var phone = req.PhoneNumber.Trim();
+        var challenge = await _db.OtpChallenges
+            .Where(o => o.PhoneNumber == phone && !o.Consumed)
+            .OrderByDescending(o => o.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+        if (challenge is null || challenge.ExpiresAt < DateTime.UtcNow || challenge.Code != req.Code)
+            throw AppException.Conflict("Invalid or expired OTP.");
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phone, ct)
+            ?? throw AppException.Unauthorized("No account found for this phone number.");
+
+        challenge.Consumed = true;
+        user.PhoneVerified = true;
+        await _db.SaveChangesAsync(ct);
+        return await IssueTokensAsync(user, ct);
+    }
+
     public async Task<AuthResponse> RefreshAsync(RefreshRequest req, CancellationToken ct = default)
     {
         var token = await _db.RefreshTokens.Include(t => t.User)

@@ -10,9 +10,25 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import * as L from 'leaflet';
-import { CostType, FacilityCreateRequest, FacilityDetailDto, FacilitySummaryDto, VehicleType } from '../../core/models';
+import { CostType, FacilityCreateRequest, FacilityDetailDto, FacilityServiceDto, FacilitySummaryDto, OwnerServiceBookingDto, ValueAddedServiceType, VehicleType } from '../../core/models';
 import { GeocodingService, GeoPlace } from '../../core/geocoding.service';
 import { ParkingService } from '../../core/parking.service';
+import { ServiceBookingService } from '../../core/service-booking.service';
+
+const SERVICE_NAMES: Record<ValueAddedServiceType, string> = {
+  [ValueAddedServiceType.CarWashExterior]: 'Exterior wash',
+  [ValueAddedServiceType.CarWashFull]: 'Interior & exterior wash',
+  [ValueAddedServiceType.EvChargingLevel1]: 'EV charging (Level 1)',
+  [ValueAddedServiceType.EvChargingLevel2]: 'EV charging (Level 2, fast)',
+  [ValueAddedServiceType.TireChange]: 'Tire change',
+  [ValueAddedServiceType.OilChange]: 'Oil change',
+  [ValueAddedServiceType.RoadsideAssistance]: 'Roadside assistance',
+  [ValueAddedServiceType.CarAccessories]: 'Car accessories',
+  [ValueAddedServiceType.CarDetailing]: 'Car detailing',
+  [ValueAddedServiceType.InsuranceRenewal]: 'Insurance renewal',
+  [ValueAddedServiceType.FastagRecharge]: 'FASTag recharge',
+};
+const ALL_SERVICE_TYPES = Object.keys(SERVICE_NAMES).map(Number) as ValueAddedServiceType[];
 
 @Component({
   selector: 'app-owner-facilities',
@@ -39,34 +55,6 @@ import { ParkingService } from '../../core/parking.service';
         </div>
 
         <div class="owner-layout-details">
-          <div class="owner-facilities-panel">
-            <h2>Your facilities</h2>
-            @if (facilities().length === 0) {
-              <p class="muted">No facilities added yet.</p>
-            } @else {
-              <div class="facility-list">
-                @for (facility of facilities(); track facility.id) {
-                  <div class="facility-item">
-                    <div>
-                      <h3>{{ facility.name }}</h3>
-                      <p class="muted">{{ facility.addressText }}</p>
-                      <p class="meta">
-                        {{ facility.level || 'Ground' }} •
-                        {{ facility.costType === CostType.Paid ? '₹' + (facility.hourlyPrice ?? 0) + '/hr' : 'Free' }} •
-                        {{ facility.availableSlots }}/{{ facility.totalSlots }} available •
-                        {{ facility.isApproved ? 'Approved' : 'Pending approval' }}
-                      </p>
-                    </div>
-                    <span class="badge" [class.ok]="facility.isApproved" [class.warn]="!facility.isApproved">
-                      {{ facility.isApproved ? 'Live' : 'Review' }}
-                    </span>
-                    <button class="ghost sm" type="button" (click)="startEdit(facility)">Edit</button>
-                  </div>
-                }
-              </div>
-            }
-          </div>
-
           <div class="owner-add-panel">
             <h2>{{ editingFacilityId() ? 'Edit facility' : 'Add facility' }}</h2>
             <p class="muted">
@@ -217,10 +205,88 @@ import { ParkingService } from '../../core/parking.service';
               </div>
             }
           </div>
+
+          <div class="owner-facilities-panel">
+            <h2>Your facilities</h2>
+            @if (facilities().length === 0) {
+              <p class="muted">No facilities added yet.</p>
+            } @else {
+              <div class="facility-list">
+                @for (facility of facilities(); track facility.id) {
+                  <div class="facility-item">
+                    <div>
+                      <h3>{{ facility.name }}</h3>
+                      <p class="muted">{{ facility.addressText }}</p>
+                      <p class="meta">
+                        {{ facility.level || 'Ground' }} •
+                        {{ facility.costType === CostType.Paid ? '₹' + (facility.hourlyPrice ?? 0) + '/hr' : 'Free' }} •
+                        {{ facility.availableSlots }}/{{ facility.totalSlots }} available •
+                        {{ facility.isApproved ? 'Approved' : 'Pending approval' }}
+                      </p>
+                    </div>
+                    <span class="badge" [class.ok]="facility.isApproved" [class.warn]="!facility.isApproved">
+                      {{ facility.isApproved ? 'Live' : 'Review' }}
+                    </span>
+                    <button class="ghost sm" type="button" (click)="startEdit(facility)">Edit</button>
+                    <button class="ghost sm" type="button" (click)="openServices(facility)">Services</button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
         </div>
       </div>
     </div>
 
+    @if (servicesFacility()) {
+      <div class="modal-backdrop" (click)="closeServices()"></div>
+      <div class="modal-card booking-detail">
+        <div class="modal-header">
+          <h2>Services &mdash; {{ servicesFacility()!.name }}</h2>
+          <button class="ghost sm" type="button" (click)="closeServices()">Close</button>
+        </div>
+
+        <h3>Value-added services</h3>
+        <p class="muted">Choose which services this facility offers and set your own price. Car owners will only see and book the services you enable here.</p>
+        <div class="facility-list">
+          @for (item of serviceForm; track item.serviceType) {
+            <div class="card facility-item service-row">
+              <label class="service-check">
+                <input type="checkbox" [(ngModel)]="item.isEnabled" [ngModelOptions]="{standalone: true}" />
+                <span>{{ nameFor(item.serviceType) }}</span>
+              </label>
+              <div class="service-price">
+                <span>₹</span>
+                <input type="number" min="0" [(ngModel)]="item.price" [ngModelOptions]="{standalone: true}" [disabled]="!item.isEnabled" />
+              </div>
+            </div>
+          }
+        </div>
+        @if (servicesError()) { <p class="error">{{ servicesError() }}</p> }
+        @if (servicesSuccess()) { <p class="success">{{ servicesSuccess() }}</p> }
+        <div class="action-row">
+          <button class="primary" type="button" [disabled]="servicesSaving()" (click)="saveServices()">
+            {{ servicesSaving() ? 'Saving…' : 'Save services' }}
+          </button>
+        </div>
+
+        <h3>Service bookings for this facility</h3>
+        <p class="muted">Read-only &mdash; car owners book directly; costs are shown here for your records.</p>
+        <div class="facility-list">
+          @for (b of facilityServiceBookings(); track b.id) {
+            <div class="card facility-item">
+              <div>
+                <strong>{{ nameFor(b.serviceType) }}</strong>
+                <p class="muted">{{ b.customerName }} • {{ b.customerEmail }}</p>
+              </div>
+              <div>₹{{ b.amount }}</div>
+            </div>
+          } @empty {
+            <p class="muted">No service bookings yet for this facility.</p>
+          }
+        </div>
+      </div>
+    }
   `,
   styles: [`
     .owner-nav {
@@ -283,12 +349,72 @@ export class OwnerFacilitiesComponent {
   photoError = signal<string | null>(null);
   photoSuccess = signal<string | null>(null);
 
+  serviceForm: FacilityServiceDto[] = ALL_SERVICE_TYPES.map((t) => ({ serviceType: t, price: 0, isEnabled: false }));
+  servicesSaving = signal(false);
+  servicesError = signal<string | null>(null);
+  servicesSuccess = signal<string | null>(null);
+  facilityServiceBookings = signal<OwnerServiceBookingDto[]>([]);
+  servicesFacility = signal<FacilitySummaryDto | null>(null);
+
   private map?: L.Map;
   private marker?: L.Marker;
   private facilityMarkers?: L.LayerGroup;
 
-  constructor(private parking: ParkingService, private geo: GeocodingService) {
+  constructor(private parking: ParkingService, private geo: GeocodingService, private serviceBookings: ServiceBookingService) {
     this.loadFacilities();
+  }
+
+  nameFor(type: ValueAddedServiceType): string {
+    return SERVICE_NAMES[type] ?? ValueAddedServiceType[type];
+  }
+
+  openServices(facility: FacilitySummaryDto): void {
+    this.servicesFacility.set(facility);
+    this.servicesError.set(null);
+    this.servicesSuccess.set(null);
+    this.loadServicesForFacility(facility.id);
+  }
+
+  closeServices(): void {
+    this.servicesFacility.set(null);
+    this.servicesError.set(null);
+    this.servicesSuccess.set(null);
+    this.facilityServiceBookings.set([]);
+  }
+
+  saveServices(): void {
+    const facilityId = this.servicesFacility()?.id;
+    if (!facilityId) return;
+    this.servicesSaving.set(true);
+    this.servicesError.set(null);
+    this.servicesSuccess.set(null);
+    const services = this.serviceForm.filter((s) => s.isEnabled);
+    this.parking.upsertFacilityServices(facilityId, { services }).subscribe({
+      next: () => {
+        this.servicesSaving.set(false);
+        this.servicesSuccess.set('Services updated.');
+      },
+      error: (e) => {
+        this.servicesSaving.set(false);
+        this.servicesError.set(e?.error?.error?.message ?? 'Could not save services.');
+      },
+    });
+  }
+
+  private loadServicesForFacility(facilityId: string): void {
+    this.serviceForm = ALL_SERVICE_TYPES.map((t) => ({ serviceType: t, price: 0, isEnabled: false }));
+    this.parking.facilityServicesForOwner(facilityId).subscribe({
+      next: (existing) => {
+        for (const item of existing) {
+          const entry = this.serviceForm.find((s) => s.serviceType === item.serviceType);
+          if (entry) { entry.price = item.price; entry.isEnabled = item.isEnabled; }
+        }
+      },
+    });
+    this.serviceBookings.listForFacility(facilityId).subscribe({
+      next: (list) => this.facilityServiceBookings.set(list),
+      error: () => this.facilityServiceBookings.set([]),
+    });
   }
 
   ngAfterViewInit(): void {

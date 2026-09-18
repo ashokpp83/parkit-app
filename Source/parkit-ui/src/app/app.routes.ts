@@ -10,6 +10,8 @@ export const routes: Routes = [
   { path: 'search', canActivate: [authGuard, driverGuard], loadComponent: () => import('./features/search/search.component').then((m) => m.SearchComponent) },
   { path: 'bookings', canActivate: [authGuard, driverGuard], loadComponent: () => import('./features/bookings/bookings.component').then((m) => m.BookingsComponent) },
   { path: 'vehicles', canActivate: [authGuard, driverGuard], loadComponent: () => import('./features/vehicles/vehicles.component').then((m) => m.VehiclesComponent) },
+  { path: 'payments', canActivate: [authGuard], loadComponent: () => import('./features/payments/payments.component').then((m) => m.PaymentsComponent) },
+  { path: 'services', canActivate: [authGuard], loadComponent: () => import('./features/services/services.component').then((m) => m.ServicesComponent) },
   { path: 'owner', canActivate: [authGuard, ownerGuard], loadComponent: () => import('./features/owner/owner-dashboard.component').then((m) => m.OwnerDashboardComponent) },
   { path: 'owner/facilities', canActivate: [authGuard, ownerGuard], loadComponent: () => import('./features/owner/owner-facilities.component').then((m) => m.OwnerFacilitiesComponent) },
   { path: 'owner/bookings', canActivate: [authGuard, ownerGuard], loadComponent: () => import('./features/owner/owner-bookings.component').then((m) => m.OwnerBookingsComponent) },

@@ -21,6 +21,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<SpaceAvailability> SpaceAvailabilities => Set<SpaceAvailability>();
     public DbSet<PricingRule> PricingRules => Set<PricingRule>();
     public DbSet<FacilityPhoto> FacilityPhotos => Set<FacilityPhoto>();
+    public DbSet<FacilityService> FacilityServices => Set<FacilityService>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<Payout> Payouts => Set<Payout>();
@@ -29,6 +30,8 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Dispute> Disputes => Set<Dispute>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
+    public DbSet<SavedPaymentMethod> SavedPaymentMethods => Set<SavedPaymentMethod>();
+    public DbSet<ServiceBooking> ServiceBookings => Set<ServiceBooking>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {

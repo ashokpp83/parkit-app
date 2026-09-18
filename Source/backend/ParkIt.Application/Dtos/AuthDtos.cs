@@ -12,6 +12,7 @@ public record RegisterRequest(
     string PreferredLanguage = "en");
 
 public record LoginRequest([Required] string EmailOrPhone, [Required] string Password);
+public record OtpLoginRequest([Required] string PhoneNumber, [Required] string Code);
 public record RefreshRequest([Required] string RefreshToken);
 public record OtpSendRequest([Required] string PhoneNumber);
 public record OtpVerifyRequest([Required] string PhoneNumber, [Required] string Code);

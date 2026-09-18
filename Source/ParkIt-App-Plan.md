@@ -1,4 +1,4 @@
-# ParkIt — India's Smart Parking Marketplace
+# ParkIt ï¿½ India's Smart Parking Marketplace
 ## Consolidated Project Plan
 
 ---
@@ -6,7 +6,7 @@
 ## 1. Product Vision & Positioning
 
 **Not:** "A parking booking app."
-**Instead:** *"India's Smart Parking Marketplace"* — a two-sided network connecting parking
+**Instead:** *"India's Smart Parking Marketplace"* ï¿½ a two-sided network connecting parking
 supply (individuals, societies, offices, malls, municipalities) with demand (drivers), backed
 by a core trust promise: the **Parking Guarantee**.
 
@@ -18,9 +18,9 @@ by a core trust promise: the **Parking Guarantee**.
 | Cities/Municipalities | Digitize and optimize parking supply |
 
 ### Core Differentiators
-1. **??? Parking Guarantee** — booked space is verified reserved, not just "shown as available."
-2. **?? Owner Income Marketplace** — AI-driven earnings estimation turns idle space into a business.
-3. **Network effect** — residential, commercial, municipal, and event parking unified in one marketplace.
+1. **??? Parking Guarantee** ï¿½ booked space is verified reserved, not just "shown as available."
+2. **?? Owner Income Marketplace** ï¿½ AI-driven earnings estimation turns idle space into a business.
+3. **Network effect** ï¿½ residential, commercial, municipal, and event parking unified in one marketplace.
 
 ---
 
@@ -50,7 +50,7 @@ FASTag/e-toll recharge).
 | Park+ | Super-app (FASTag, insurance) | Weak P2P, no owner monetization |
 | ParkingPal | Guaranteed booking | Limited amenities/EV support |
 | Parke | Simple search?book?QR flow | No P2P, no monthly plans |
-| ParkIN24 | Two-app model (driver + owner), full feature set | Chennai-only — ParkIt can go pan-India with richer trust/reliability features |
+| ParkIN24 | Two-app model (driver + owner), full feature set | Chennai-only ï¿½ ParkIt can go pan-India with richer trust/reliability features |
 | Paarking | Valet + events | Inconsistent live availability |
 | BookMySpace | P2P monetization focus | Weak discovery/live availability |
 
@@ -69,12 +69,12 @@ opening.
 - Facilities: EV charging, handicapped access, two-wheeler, covered/uncovered
 - Visual distinction via icons/labels/colors
 - **Availability status tiers (new core concept):**
-  - ?? **Guaranteed** — reserved & verified
-  - ?? **Likely available** — based on live/estimated occupancy
-  - ?? **Full** — no booking possible
+  - ?? **Guaranteed** ï¿½ reserved & verified
+  - ?? **Likely available** ï¿½ based on live/estimated occupancy
+  - ?? **Full** ï¿½ no booking possible
 - Vehicle compatibility & physical constraints (hatchback/sedan/SUV/EV/commercial; length, width, height, turning radius, ramp/basement restrictions)
 
-### 4.2 Parking Guarantee Engine (New — P0)
+### 4.2 Parking Guarantee Engine (New ï¿½ P0)
 When booked: `Booking ID ? Space ? Vehicle ? Time Window ? Owner ? Entry` is guaranteed.
 If space unavailable on arrival, automated workflow:
 1. Detect failed parking ? 2. Contact owner ? 3. Resolution window ? 4. Search alternatives ?
@@ -96,6 +96,11 @@ If space unavailable on arrival, automated workflow:
 - **"Parking + Destination" UX**: user specifies destination first; app ranks parking by walk time, price, guarantee status.
 - **True Availability calculation** (Phase 2+): owner input + bookings + check-in/out + IoT/ANPR + historical usage ? estimated real availability.
 
+### 4.4a Compare Parking Options (New)
+- From search results, user shortlists 2ï¿½3 parking spaces and opens a side-by-side **Compare**
+  view: price, distance, availability status, rating per option.
+- Direct "Book" CTA from the comparison screen to skip returning to the results list.
+
 ### 4.5 Reservations & Bookings
 - Advance reservation with time slot (start/end).
 - Upfront payment for paid spots.
@@ -108,17 +113,19 @@ If space unavailable on arrival, automated workflow:
 
 ### 4.6 Payments
 - UPI, cards, wallets; **cash + digital record** for attendant-assisted lots.
+- **Saved payment methods**: view/add/remove cards for faster checkout (not one-off entry each time).
 - Owner payouts after commission; payout protection messaging ("secured until check-in/check-out").
 - Payment history & receipts.
 - In-app wallet for faster payouts.
 - **Revenue models**: commission-based, subscription-based (owner pays flat fee, keeps revenue), hybrid.
 
 ### 4.7 User Profiles & Roles
+- **Login**: password or mobile **OTP** as an alternate/second login factor (in addition to OTP already used for KYC verification).
 - **Car owners**: find/book, history, ratings.
 - **Parking space owners**: list/manage spaces, view earnings.
 - **Value-added services users**: car wash, insurance, e-toll recharge.
 - Ratings & reviews both directions.
-- **Owner Reliability Score** (booking honoured %, space-available-on-arrival %, response time, cancellation rate, cleanliness, security) — replaces simple star ratings.
+- **Owner Reliability Score** (booking honoured %, space-available-on-arrival %, response time, cancellation rate, cleanliness, security) ï¿½ replaces simple star ratings.
 - **Customer Reliability Score** (no-shows, late departures, cancellations, payment behavior, disputes).
 - **Guest parking**: book on behalf of another driver/vehicle.
 
@@ -135,20 +142,28 @@ If space unavailable on arrival, automated workflow:
 - **Dispute management** with defined categories (space unavailable, owner cancellation, no-show, vehicle damage, wrong charge, overstay, security, wrong location, unauthorized vehicle, fraudulent listing) ? Evidence ? SLA ? Resolution ? Refund/Penalty.
 - **Fraud detection**: fake listings/reviews, duplicate spaces, multiple accounts, chargebacks, GPS spoofing, deposit abuse.
 
-### 4.10 Free Parking Deposit — Revised
+### 4.10 Free Parking Deposit ï¿½ Revised
 - Reconsidered from mandatory ?10/hour universal deposit ? **optional "reservation/commitment deposit"** applied only when necessary (e.g., high-demand free lots), refunded automatically after verified checkout, to reduce payment friction and adoption barriers.
 
 ### 4.11 Value-Added Services
-- Car wash, insurance renewal, FASTag/e-toll recharge.
+- **Facility-owned catalog, not global**: each parking facility has its own value-added services catalog. The facility owner chooses which service types to offer *at that specific location* and sets that facility's own price per service, with an edit option at any time. Nothing is enabled by default; a service only appears for car owners once its facility owner turns it on. This models VAS as facility-specific (e.g. a surface lot may only offer car wash, while a covered multi-level facility may also offer EV charging and tire change), since not every service is physically deliverable at every location.
+- Catalog types: car wash (exterior only, or interior + exterior), insurance renewal, FASTag/e-toll recharge, bookable EV charging tiers (Level 1 standard / Level 2 fast - distinct from EV charging as a parking amenity in 4.1), tire change, oil change, roadside assistance, car accessories, car detailing.
+- **Insurance coverage types**: Comprehensive, Liability, Collision, Uninsured Motorist - presented as selectable plans within the insurance VAS.
+- **Roles**: the facility owner *manages* the catalog (select service + set price per facility) but does not "book" their own services - the owner's view is read-only cost/detail information plus the list of bookings placed against their facility. The car owner *browses* a chosen facility's enabled services and books directly, paying the facility owner's set price (server-priced from the facility's catalog entry, never client-supplied).
+- **Booking updates the facility**: when a car owner books a value-added service, the booking is recorded against that specific facility (not a global service ledger), so the facility owner's booking list for that facility updates immediately, showing who booked what and at what price.
+- **Bundled into the parking booking flow**: when a car owner opens a facility to reserve a slot, that facility's enabled VAS catalog (with owner-set prices) is shown inline in the same booking panel as optional add-ons. Any selected services are booked automatically alongside the parking reservation - no separate trip to a standalone services page is required. The car owner still has a dedicated Services tab to browse/manage bookings by facility at any time, independent of an active parking booking.
+- **Combined cost shown before paying**: the booking panel and the payment step both show a running breakdown - Parking cost + Services cost = Total - so the car owner sees the full amount before confirming. The payment gateway currently only charges the parking amount (services are confirmed directly with the facility); this is called out explicitly in the payment step so the total isn't mistaken for a single combined charge.
+- **Facility owner's booking history reflects service revenue too**: the owner's Booking History list shows each parking booking's amount alongside that customer's value-added service spend at the same facility (Parking + Services = Total), correlated by facility and customer, so the owner isn't only seeing the base parking amount for a customer who also paid for services.
+- **Advertisements/Offers Hub (Phase 2)**: promotional surface (Featured Offers + More Deals carousels) aggregating VAS promos and third-party parking-related deals/discounts.
 
 ### 4.12 Parking Amenities & Security
-- CCTV **optional, not mandatory** (unrealistic for residential owners) — modeled as a **Security Level (attributes: CCTV, guard, gated, access-controlled, lit, residential/basement)** score, e.g., 4/5.
+- CCTV **optional, not mandatory** (unrealistic for residential owners) ï¿½ modeled as a **Security Level (attributes: CCTV, guard, gated, access-controlled, lit, residential/basement)** score, e.g., 4/5.
 - Covered/uncovered selection.
 - 24/7 availability where applicable.
 
 ### 4.13 Ratings & Health Score
 - Parking Lot Ratings: cleanliness, security, amenities.
-- **Parking Health Score** (0–100): availability accuracy, booking success, cleanliness, security, complaints, cancellations, entry/exit experience, payment issues — a stronger decision signal than star ratings alone.
+- **Parking Health Score** (0ï¿½100): availability accuracy, booking success, cleanliness, security, complaints, cancellations, entry/exit experience, payment issues ï¿½ a stronger decision signal than star ratings alone.
 
 ### 4.14 Vehicle Damage Protection (New)
 - Digital check-in/out with timestamped photos (front/rear/left/right).
@@ -158,7 +173,7 @@ If space unavailable on arrival, automated workflow:
 - QR / number-plate based check-in and automatic checkout for accurate occupancy data.
 - ANPR integration at participating facilities (Phase 2/3).
 
-### 4.16 Monthly / Recurring / Commuter Parking (New — Major Gap Filled)
+### 4.16 Monthly / Recurring / Commuter Parking (New ï¿½ Major Gap Filled)
 - Hourly | Daily | Weekly | **Monthly**, with auto-renew.
 - **Commuter parking**: recurring weekday bookings with savings vs. daily rate.
 - **Digital Parking Pass** for recurring users (QR/ANPR access).
@@ -166,7 +181,7 @@ If space unavailable on arrival, automated workflow:
 
 ### 4.17 Event, Corporate, Society, Hospital, Airport, Railway, Religious-Place Parking (Phase 2/3)
 - Event Parking Mode with staggered exit recommendations.
-- Corporate Parking (employee/visitor/reserved/EV/guest management) — potential B2B revenue.
+- Corporate Parking (employee/visitor/reserved/EV/guest management) ï¿½ potential B2B revenue.
 - Residential Society Parking Marketplace (with society approval, resident verification, guest access, time restrictions).
 - Office parking sharing (after-hours/weekends).
 - Hospital, Airport (short/long-term, park & ride, valet), Railway (commuter plans), Temple/religious-place demand prediction.
@@ -177,7 +192,7 @@ If space unavailable on arrival, automated workflow:
 - "Don't circle around" mode: reroute to next-best parking if selected space becomes unavailable (Phase 2).
 
 ### 4.19 Access Instructions (P2P Essential)
-- Gate/remote access, security contact, slot location, lift availability, owner instructions — captured as part of booking.
+- Gate/remote access, security contact, slot location, lift availability, owner instructions ï¿½ captured as part of booking.
 
 ### 4.20 Special-Situation Filters
 - Family, Accessibility, Women Safety, EV, Shopping, Hospital-specific filters.
@@ -198,7 +213,7 @@ If space unavailable on arrival, automated workflow:
 ### 4.24 Municipal Integration & Enforcement (Phase 3, Legally Governed)
 - Architecture to support municipal/traffic-police/smart-city data sources from day one.
 - Parking rule alerts (time-restricted zones); AI-camera-based enforcement (future, subject to legal/municipal authorization).
-- Towing escalation workflow (Owner ? Security ? Operator ? Enforcement) — implemented only with proper authorization.
+- Towing escalation workflow (Owner ? Security ? Operator ? Enforcement) ï¿½ implemented only with proper authorization.
 
 ---
 
@@ -209,7 +224,7 @@ If space unavailable on arrival, automated workflow:
 - **Scalability:** Support onboarding additional parking providers/operators over time.
 - **Usability:** Fast booking/listing flows.
 - **Compatibility:** Android 9+, iOS 14+.
-- **Resilience:** Offline/low-network support — booking QR, slot info, access instructions, and payment status must remain accessible without connectivity (critical for basements).
+- **Resilience:** Offline/low-network support ï¿½ booking QR, slot info, access instructions, and payment status must remain accessible without connectivity (critical for basements).
 
 ---
 
@@ -226,7 +241,7 @@ If space unavailable on arrival, automated workflow:
 | Real-time | `@microsoft/signalr` client for live availability, guarantee-engine alerts, mutual alerts |
 | Push notifications | Firebase Cloud Messaging (FCM) via Capacitor plugin |
 | Payments | Razorpay/Stripe SDK (UPI, cards, wallets); cash-with-digital-record flow |
-| Auth | JWT + refresh tokens, stored via Capacitor Secure Storage |
+| Auth | JWT + refresh tokens (password or mobile OTP login), stored via Capacitor Secure Storage |
 | Offline support | Angular Service Worker + IndexedDB for cached booking QR/details |
 | Multilingual | Angular `i18n` / `ngx-translate` |
 | Camera/QR | Capacitor Camera plugin (vehicle check-in photos, QR scanning) |
@@ -237,7 +252,7 @@ If space unavailable on arrival, automated workflow:
 | Framework | ASP.NET Core Web API (.NET 8 LTS) |
 | Architecture | Clean Architecture (API / Application / Domain / Infrastructure) |
 | Database | PostgreSQL + PostGIS (recommended for geo-spatial parking queries) via EF Core, or SQL Server + spatial types |
-| Auth | ASP.NET Core Identity + JWT (access + refresh tokens); role-based (Driver, Owner, Operator, Admin, Attendant) |
+| Auth | ASP.NET Core Identity + JWT (access + refresh tokens); password or SMS-OTP login; role-based (Driver, Owner, Operator, Admin, Attendant) |
 | Real-time | SignalR hubs for live availability, guarantee-engine events, mutual alerts |
 | Payments | Razorpay/Stripe server-side integration + payout/escrow handling |
 | Caching | Redis (availability queries, pricing suggestions, session data) |
@@ -313,7 +328,7 @@ flowchart TB
 
 ---
 
-## 8. Data Model — Key Design Principle
+## 8. Data Model ï¿½ Key Design Principle
 
 Do **not** model around a single "Parking Lot" entity. Model around **Parking Space
 Inventory**, since a single provider may have multiple levels/zones:
@@ -342,15 +357,15 @@ extensible for commercial, municipal, and event-parking providers later.
 ---
 
 ## 9. Parking Provider Types (Onboarding Model)
-Individual • Apartment/Society • Office • Mall • Hotel • Restaurant • Hospital • School/College •
-Municipality • Parking Operator • Event Organizer • Airport • Railway Station — each with
+Individual ï¿½ Apartment/Society ï¿½ Office ï¿½ Mall ï¿½ Hotel ï¿½ Restaurant ï¿½ Hospital ï¿½ School/College ï¿½
+Municipality ï¿½ Parking Operator ï¿½ Event Organizer ï¿½ Airport ï¿½ Railway Station ï¿½ each with
 different management capabilities in the Operator Portal.
 
 ---
 
 ## 10. Feature Roadmap by Phase
 
-### ?? Phase 1 (MVP — P0, Must-Have)
+### ?? Phase 1 (MVP ï¿½ P0, Must-Have)
 1. Real-time availability (??/??/?? status model)
 2. Advance booking & Parking Guarantee Engine (core version)
 3. Owner KYC & space verification (manual review)
@@ -358,10 +373,11 @@ different management capabilities in the Operator Portal.
 5. No-show, overstay, and cancellation rules (both sides)
 6. Owner earnings dashboard & reliability score
 7. Vehicle registration & compatibility checks
-8. Navigation to actual entrance (basic — entrance/gate/slot text guidance)
-9. Payments (UPI/card/wallet) + admin dispute management
+8. Navigation to actual entrance (basic ï¿½ entrance/gate/slot text guidance)
+9. Payments (UPI/card/wallet, saved payment methods) + admin dispute management
 10. Fraud protection basics, admin moderation dashboard
 11. Monthly parking (hourly/daily/weekly/monthly + auto-renew)
+12. Compare parking options (side-by-side price/distance/availability/rating)
 
 ### ?? Phase 2 (Major Differentiators)
 - Commuter/recurring bookings, parking subscriptions
@@ -371,6 +387,7 @@ different management capabilities in the Operator Portal.
 - Parking Health Score, vehicle damage protection (photo check-in/out)
 - Parking attendant mode, guest parking, emergency parking
 - SMS/WhatsApp fallback notifications, multilingual support (Hindi, Tamil)
+- Expanded value-added services catalog (tiered EV charging, tire change, oil change, roadside assistance, car accessories, car detailing) + Advertisements/Offers hub
 
 ### ?? Phase 3 (Strategic / Long-Term)
 - ANPR & smart gate integration
@@ -383,7 +400,7 @@ different management capabilities in the Operator Portal.
 ---
 
 ## 11. User Roles & Portals
-- **Driver App**: search, book, pay, rate, navigate, manage vehicles.
+- **Driver App**: search, compare, book, pay, rate, navigate, manage vehicles.
 - **Owner App**: list/manage spaces, view earnings, pricing assistant, reliability score.
 - **Attendant Mode**: simplified QR-scan validation UI.
 - **Admin Portal**: approvals, disputes, fraud monitoring, analytics.

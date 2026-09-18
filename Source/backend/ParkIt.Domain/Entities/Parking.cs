@@ -35,6 +35,17 @@ public class ParkingFacility : BaseEntity
 
     public ICollection<ParkingSpace> Spaces { get; set; } = new List<ParkingSpace>();
     public ICollection<FacilityPhoto> Photos { get; set; } = new List<FacilityPhoto>();
+    public ICollection<FacilityService> Services { get; set; } = new List<FacilityService>();
+}
+
+/// <summary>A value-added service the facility owner has chosen to offer at this facility, with its own price.</summary>
+public class FacilityService : BaseEntity
+{
+    public Guid FacilityId { get; set; }
+    public ParkingFacility? Facility { get; set; }
+    public ValueAddedServiceType ServiceType { get; set; }
+    public decimal Price { get; set; }
+    public bool IsEnabled { get; set; } = true;
 }
 
 /// <summary>The core inventory unit. All discovery/booking is modeled around a Space, not a "lot".</summary>

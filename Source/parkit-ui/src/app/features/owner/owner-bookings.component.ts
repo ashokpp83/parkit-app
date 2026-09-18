@@ -1,8 +1,11 @@
 import { DatePipe } from '@angular/common';
 import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { BookingDto, PaymentStatus } from '../../core/models';
 import { ParkingService } from '../../core/parking.service';
+import { ServiceBookingService } from '../../core/service-booking.service';
 
 @Component({
   selector: 'app-owner-bookings',
@@ -18,7 +21,6 @@ import { ParkingService } from '../../core/parking.service';
       </div>
     </div>
     <div class="card">
-      <h1>Booking history</h1>
       <p class="muted">Bookings made to your facilities.</p>
 
       @if (ownerBookings().length === 0) {
@@ -38,7 +40,12 @@ import { ParkingService } from '../../core/parking.service';
                 <span class="badge" [class.guaranteed]="b.isGuaranteed">{{ b.isGuaranteed ? 'Guaranteed' : 'Reserved' }}</span>
               </div>
               <div class="space-bottom">
-                <span class="price">₹{{ b.amount }}</span>
+                <span class="price">
+                  Parking: ₹{{ b.amount }}
+                  @if (servicesAmountFor(b) > 0) {
+                    <span> + Services: ₹{{ servicesAmountFor(b) }} = <strong>₹{{ b.amount + servicesAmountFor(b) }}</strong></span>
+                  }
+                </span>
                 <span class="security">{{ statusLabel(b.status) }}</span>
                 @if (b.paymentStatus !== undefined && b.paymentStatus !== null) {
                   <span class="badge" [class.ok]="b.paymentStatus === PaymentStatus.Captured" [class.warn]="b.paymentStatus !== PaymentStatus.Captured">
@@ -105,8 +112,11 @@ export class OwnerBookingsComponent {
     [PaymentStatus.PartialRefund]: 'Partially refunded',
     [PaymentStatus.Failed]: 'Payment failed',
   };
+  // Best-effort correlation: services aren't linked to a specific parking booking,
+  // so we attribute a customer's service spend at a facility to their bookings there.
+  private servicesByFacilityAndCustomer = new Map<string, number>();
 
-  constructor(private parking: ParkingService) {
+  constructor(private parking: ParkingService, private serviceBookings: ServiceBookingService) {
     this.loadOwnerBookings();
   }
 
@@ -118,10 +128,36 @@ export class OwnerBookingsComponent {
     return this.paymentLabels[status] ?? `Status ${status}`;
   }
 
+  servicesAmountFor(b: BookingDto): number {
+    return this.servicesByFacilityAndCustomer.get(`${b.facilityId}|${b.driverEmail}`) ?? 0;
+  }
+
   private loadOwnerBookings(): void {
     this.parking.ownerBookings().subscribe({
-      next: (items) => this.ownerBookings.set(items),
+      next: (items) => {
+        this.ownerBookings.set(items);
+        this.loadServiceTotals(items);
+      },
       error: () => this.ownerBookings.set([]),
+    });
+  }
+
+  private loadServiceTotals(items: BookingDto[]): void {
+    const facilityIds = Array.from(new Set(items.map((b) => b.facilityId)));
+    if (facilityIds.length === 0) return;
+
+    forkJoin(
+      facilityIds.map((id) => this.serviceBookings.listForFacility(id).pipe(catchError(() => of([]))))
+    ).subscribe((results) => {
+      const map = new Map<string, number>();
+      results.forEach((bookings, i) => {
+        const facilityId = facilityIds[i];
+        for (const sb of bookings) {
+          const key = `${facilityId}|${sb.customerEmail}`;
+          map.set(key, (map.get(key) ?? 0) + sb.amount);
+        }
+      });
+      this.servicesByFacilityAndCustomer = map;
     });
   }
 }

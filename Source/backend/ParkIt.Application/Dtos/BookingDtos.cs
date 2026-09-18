@@ -16,6 +16,7 @@ public record PayBookingRequest(
 public record BookingDto(
     Guid Id,
     Guid SpaceId,
+    Guid FacilityId,
     string FacilityName,
     string? SlotLabel,
     Guid VehicleId,

@@ -29,6 +29,10 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest req, CancellationToken ct)
         => Ok(await _auth.LoginAsync(req, ct));
 
+    [HttpPost("login/otp")]
+    public async Task<ActionResult<AuthResponse>> LoginWithOtp(OtpLoginRequest req, CancellationToken ct)
+        => Ok(await _auth.LoginWithOtpAsync(req, ct));
+
     [HttpPost("refresh")]
     public async Task<ActionResult<AuthResponse>> Refresh(RefreshRequest req, CancellationToken ct)
         => Ok(await _auth.RefreshAsync(req, ct));

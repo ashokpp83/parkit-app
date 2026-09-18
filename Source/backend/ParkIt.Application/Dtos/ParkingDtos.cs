@@ -135,6 +135,14 @@ public record FacilityDetailDto(
     IReadOnlyList<FacilitySpaceDto> Spaces,
     IReadOnlyList<FacilityPhotoDto> Photos);
 
+public record FacilityServiceDto(
+    ValueAddedServiceType ServiceType,
+    decimal Price,
+    bool IsEnabled);
+
+public record UpsertFacilityServicesRequest(
+    IReadOnlyList<FacilityServiceDto> Services);
+
 public record FacilityPhotoDto(
     Guid Id,
     Guid FacilityId,

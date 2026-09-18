@@ -6,11 +6,13 @@ import {
   BookingDto,
   FacilityDetailDto,
   FacilityCreateRequest,
+  FacilityServiceDto,
   FacilitySummaryDto,
   PagedResult,
   PaymentMethod,
   SpaceSearchResult,
   SpaceAvailabilityDto,
+  UpsertFacilityServicesRequest,
   UpsertVehicleRequest,
   VehicleDto,
   OwnerDashboardStatisticsDto,
@@ -106,5 +108,17 @@ export class ParkingService {
 
   ownerDashboardStatistics(): Observable<OwnerDashboardStatisticsDto> {
     return this.http.get<OwnerDashboardStatisticsDto>(`${this.base}/parking/owner/dashboard/statistics`);
+  }
+
+  facilityServices(facilityId: string): Observable<FacilityServiceDto[]> {
+    return this.http.get<FacilityServiceDto[]>(`${this.base}/parking/facilities/${facilityId}/services`);
+  }
+
+  facilityServicesForOwner(facilityId: string): Observable<FacilityServiceDto[]> {
+    return this.http.get<FacilityServiceDto[]>(`${this.base}/parking/facilities/${facilityId}/services/manage`);
+  }
+
+  upsertFacilityServices(facilityId: string, payload: UpsertFacilityServicesRequest): Observable<FacilityServiceDto[]> {
+    return this.http.put<FacilityServiceDto[]>(`${this.base}/parking/facilities/${facilityId}/services`, payload);
   }
 }

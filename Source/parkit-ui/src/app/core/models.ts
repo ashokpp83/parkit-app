@@ -6,6 +6,20 @@ export enum SpaceStatus { Guaranteed = 0, LikelyAvailable = 1, Full = 2 }
 export enum VehicleType { Hatchback = 0, Sedan = 1, SUV = 2, MUV = 3, Luxury = 4, EV = 5, Commercial = 6, TwoWheeler = 7 }
 export enum PaymentMethod { UPI = 0, Card = 1, Wallet = 2, Cash = 3, FASTag = 4 }
 export enum PaymentStatus { Pending = 0, Held = 1, Captured = 2, Refunded = 3, PartialRefund = 4, Failed = 5 }
+export enum ValueAddedServiceType {
+  CarWashExterior = 0,
+  CarWashFull = 1,
+  EvChargingLevel1 = 2,
+  EvChargingLevel2 = 3,
+  TireChange = 4,
+  OilChange = 5,
+  RoadsideAssistance = 6,
+  CarAccessories = 7,
+  CarDetailing = 8,
+  InsuranceRenewal = 9,
+  FastagRecharge = 10,
+}
+export enum ServiceBookingStatus { Requested = 0, InProgress = 1, Completed = 2, Cancelled = 3 }
 
 export interface UserDto {
   id: string;
@@ -24,6 +38,66 @@ export interface AuthResponse {
   refreshToken: string;
   accessTokenExpiresAt: string;
   user: UserDto;
+}
+
+export interface OtpLoginRequest {
+  phoneNumber: string;
+  code: string;
+}
+
+export interface SavedPaymentMethodDto {
+  id: string;
+  method: PaymentMethod;
+  brand?: string | null;
+  last4?: string | null;
+  expiryMonth?: number | null;
+  expiryYear?: number | null;
+  isDefault: boolean;
+}
+
+export interface AddPaymentMethodRequest {
+  method: PaymentMethod;
+  brand?: string | null;
+  last4?: string | null;
+  expiryMonth?: number | null;
+  expiryYear?: number | null;
+  gatewayToken?: string | null;
+  isDefault?: boolean;
+}
+
+export interface ServiceBookingDto {
+  id: string;
+  facilityId: string;
+  facilityName: string;
+  serviceType: ValueAddedServiceType;
+  amount: number;
+  status: ServiceBookingStatus;
+  createdAt: string;
+}
+
+export interface OwnerServiceBookingDto {
+  id: string;
+  serviceType: ValueAddedServiceType;
+  amount: number;
+  status: ServiceBookingStatus;
+  createdAt: string;
+  customerName: string;
+  customerEmail: string;
+}
+
+export interface CreateServiceBookingRequest {
+  facilityId: string;
+  serviceType: ValueAddedServiceType;
+}
+
+export interface FacilityServiceDto {
+  serviceType: ValueAddedServiceType;
+  price: number;
+  isEnabled: boolean;
+}
+
+export interface UpsertFacilityServicesRequest {
+  services: FacilityServiceDto[];
 }
 
 export interface VehicleDto {
@@ -179,6 +253,7 @@ export interface PagedResult<T> {
 export interface BookingDto {
   id: string;
   spaceId: string;
+  facilityId: string;
   facilityName: string;
   slotLabel?: string | null;
   vehicleId: string;

@@ -112,6 +112,9 @@ public class Notification : BaseEntity
 public class ServiceBooking : BaseEntity
 {
     public Guid UserId { get; set; }
+    public User? User { get; set; }
+    public Guid FacilityId { get; set; }
+    public ParkingFacility? Facility { get; set; }
     public ValueAddedServiceType ServiceType { get; set; }
     public decimal Amount { get; set; }
     public ServiceBookingStatus Status { get; set; } = ServiceBookingStatus.Requested;

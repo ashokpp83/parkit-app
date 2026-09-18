@@ -57,11 +57,16 @@ h3 { margin: 0 0 4px; font-size: 17px; }
 .auth-wrap .auth-card { margin: 8px auto 0; }
 
 label { display: block; color: var(--muted); font-size: 13px; margin: 12px 0 6px; }
-input, select {
+input:not([type="checkbox"]):not([type="radio"]), select {
   width: 100%; padding: 11px 12px; border-radius: 10px;
   background: var(--surface-2); border: 1px solid var(--border); color: var(--text); font-size: 15px;
 }
 input:focus, select:focus { outline: none; border-color: var(--primary); }
+input[type="checkbox"], input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
 
 button {
   cursor: pointer; border: none; border-radius: 10px; font-weight: 600; font-size: 15px;
@@ -104,6 +109,21 @@ button.ghost:hover { color: var(--text); }
 .security { color: var(--muted); }
 .qr { background: var(--surface-2); padding: 4px 8px; border-radius: 6px; color: var(--muted); font-size: 12px; }
 
+.compare-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+button.compare-fab {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  z-index: 30;
+  width: auto;
+  margin-top: 0;
+  border-radius: 999px;
+  padding: 10px 18px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.compare-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.compare-col p { margin: 4px 0; }
+
 .badge {
   align-self: flex-start; padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 600;
   background: var(--surface-2); color: var(--muted); white-space: nowrap;
@@ -125,9 +145,9 @@ button.ghost:hover { color: var(--text); }
 }
 .owner-grid .full-width { grid-column: 1 / -1; }
 .checkbox-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px 14px;
   margin-top: 8px;
 }
 .checkbox-row label {
@@ -153,6 +173,50 @@ button.ghost:hover { color: var(--text); }
 .facility-item .ghost.sm { margin-left: auto; }
 .badge.ok { background: rgba(41,193,126,.15); color: var(--ok); }
 .badge.warn { background: rgba(224,165,49,.15); color: var(--warn); }
+
+.service-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.service-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.service-check input[type="checkbox"] {
+  flex: none;
+  margin: 0;
+}
+.service-price {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+.service-price input {
+  width: 90px;
+}
+
+.detail-section {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.detail-section:last-of-type { border-bottom: none; }
+.detail-section h3, .detail-section h4 {
+  margin: 0 0 8px;
+}
+.booking-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.booking-total { margin: 0; }
 
 .action-row {
   display: flex;
@@ -315,6 +379,12 @@ button.ghost:hover { color: var(--text); }
   padding: 4px 10px;
   font-size: 12px;
   color: #c7d3e3;
+  cursor: pointer;
+}
+.chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
 }
 
 .modal-backdrop {
@@ -606,7 +676,7 @@ button.ghost:hover { color: var(--text); }
 
 /* Mobile-optimized input fields */
 @media (max-width: 768px) {
-  input, select, textarea {
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea {
     font-size: 16px; /* Prevents zoom on iOS */
     min-height: 44px;
     padding: 12px;

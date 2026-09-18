@@ -3,7 +3,7 @@ using ParkIt.Domain.Enums;
 
 namespace ParkIt.Domain.Entities;
 
-/// <summary>A platform user. A single account may act as Driver and/or Owner depending on Role.</summary>
+/// <summary>A platform user. Each account is exactly one role: Driver, Owner, Operator, Admin, or Attendant.</summary>
 public class User : BaseEntity
 {
     public string FullName { get; set; } = string.Empty;
@@ -67,4 +67,19 @@ public class OtpChallenge : BaseEntity
     public string Code { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; }
     public bool Consumed { get; set; }
+}
+
+/// <summary>A card/UPI/wallet saved for faster checkout. Only display-safe, tokenized data is stored -
+/// never a raw card number or CVV; GatewayToken is the opaque reference returned by the payment gateway.</summary>
+public class SavedPaymentMethod : BaseEntity
+{
+    public Guid UserId { get; set; }
+    public User? User { get; set; }
+    public PaymentMethod Method { get; set; }
+    public string? Brand { get; set; }
+    public string? Last4 { get; set; }
+    public byte? ExpiryMonth { get; set; }
+    public short? ExpiryYear { get; set; }
+    public string? GatewayToken { get; set; }
+    public bool IsDefault { get; set; }
 }

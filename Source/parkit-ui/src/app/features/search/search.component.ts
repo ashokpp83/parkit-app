@@ -6,17 +6,34 @@ import { RouterLink } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import * as L from 'leaflet';
 import { ParkingService } from '../../core/parking.service';
+import { ServiceBookingService } from '../../core/service-booking.service';
 import { GeocodingService, GeoPlace } from '../../core/geocoding.service';
 import {
   BookingDto,
   CostType,
   FacilityDetailDto,
+  FacilityServiceDto,
   PaymentMethod,
   PaymentStatus,
   SpaceSearchResult,
   SpaceStatus,
+  ValueAddedServiceType,
   VehicleDto,
 } from '../../core/models';
+
+const SERVICE_NAMES: Record<ValueAddedServiceType, string> = {
+  [ValueAddedServiceType.CarWashExterior]: 'Exterior wash',
+  [ValueAddedServiceType.CarWashFull]: 'Interior & exterior wash',
+  [ValueAddedServiceType.EvChargingLevel1]: 'EV charging (Level 1)',
+  [ValueAddedServiceType.EvChargingLevel2]: 'EV charging (Level 2, fast)',
+  [ValueAddedServiceType.TireChange]: 'Tire change',
+  [ValueAddedServiceType.OilChange]: 'Oil change',
+  [ValueAddedServiceType.RoadsideAssistance]: 'Roadside assistance',
+  [ValueAddedServiceType.CarAccessories]: 'Car accessories',
+  [ValueAddedServiceType.CarDetailing]: 'Car detailing',
+  [ValueAddedServiceType.InsuranceRenewal]: 'Insurance renewal',
+  [ValueAddedServiceType.FastagRecharge]: 'FASTag recharge',
+};
 
 interface FacilitySearchResult {
   facilityId: string;
@@ -84,6 +101,12 @@ interface FacilitySearchResult {
             <div class="card space">
               <div class="space-top">
                 <div>
+                  <label class="compare-check">
+                    <input type="checkbox" [checked]="compareIds().has(f.facilityId)"
+                      [disabled]="!compareIds().has(f.facilityId) && compareIds().size >= 3"
+                      (change)="toggleCompare(f.facilityId)" />
+                    Compare
+                  </label>
                   <h3>{{ f.facilityName }}</h3>
                   <p class="muted">{{ f.addressText }}</p>
                   <p class="meta">
@@ -107,6 +130,38 @@ interface FacilitySearchResult {
       </div>
     </div>
 
+    @if (compareIds().size >= 2) {
+      <button class="primary compare-fab" type="button" (click)="showCompare.set(true)">
+        Compare ({{ compareIds().size }})
+      </button>
+    }
+
+    @if (showCompare()) {
+      <div class="modal-backdrop" (click)="showCompare.set(false)"></div>
+      <div class="modal-card booking-detail">
+        <div class="modal-header">
+          <h2>Compare parking options</h2>
+          <button class="ghost sm" type="button" (click)="showCompare.set(false)">Close</button>
+        </div>
+        <div class="compare-grid">
+          @for (f of compareList(); track f.facilityId) {
+            <div class="card compare-col">
+              <h3>{{ f.facilityName }}</h3>
+              <p class="muted">{{ f.addressText }}</p>
+              <p><strong>Price:</strong> {{ f.costType === CostType.Paid ? '₹' + (f.minHourlyPrice ?? 0) + '/hr' : 'Free' }}</p>
+              <p><strong>Distance:</strong> {{ f.distanceKm }} km</p>
+              <p><strong>Availability:</strong> {{ statusLabel(f.status) }} ({{ f.availableSlots }}/{{ f.totalSlots }})</p>
+              <p><strong>Security:</strong> {{ f.securityLevel }}/5</p>
+              <div class="chip-row">
+                <button class="primary sm" (click)="showCompare.set(false); openFacility(f)">Book</button>
+                <button class="ghost sm" (click)="toggleCompare(f.facilityId)">Remove</button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
     @if (selectedFacilitySummary()) {
       <div class="modal-backdrop" (click)="closeFacility()"></div>
       <div class="modal-card booking-detail">
@@ -117,17 +172,19 @@ interface FacilitySearchResult {
         @if (facilityLoading()) {
           <p class="muted">Loading facility details…</p>
         } @else if (selectedFacility()) {
-          <h3>{{ selectedFacility()!.name }}</h3>
-          <p class="muted">{{ selectedFacility()!.addressText }}</p>
-          <p class="meta">{{ selectedFacility()!.availableSlots }}/{{ selectedFacility()!.totalSlots }} slots open</p>
-          <p class="meta">Facility contact: {{ selectedFacility()!.ownerName || 'N/A' }} · {{ selectedFacility()!.ownerPhoneNumber || 'N/A' }}</p>
-          <p class="meta">Email: {{ selectedFacility()!.ownerEmail || 'N/A' }}</p>
-          @if (selectedFacility()!.accessInstructions) {
-            <p class="meta">Access: {{ selectedFacility()!.accessInstructions }}</p>
-          }
+          <div class="detail-section">
+            <h3>{{ selectedFacility()!.name }}</h3>
+            <p class="muted">{{ selectedFacility()!.addressText }}</p>
+            <p class="meta">{{ selectedFacility()!.availableSlots }}/{{ selectedFacility()!.totalSlots }} slots open</p>
+            <p class="meta">Facility contact: {{ selectedFacility()!.ownerName || 'N/A' }} · {{ selectedFacility()!.ownerPhoneNumber || 'N/A' }}</p>
+            <p class="meta">Email: {{ selectedFacility()!.ownerEmail || 'N/A' }}</p>
+            @if (selectedFacility()!.accessInstructions) {
+              <p class="meta">Access: {{ selectedFacility()!.accessInstructions }}</p>
+            }
+          </div>
 
           @if (selectedFacility()?.photos && selectedFacility()!.photos!.length > 0) {
-            <div class="facility-photos-section">
+            <div class="detail-section facility-photos-section">
               <h4>Photos</h4>
               <div class="facility-photos-gallery">
                 @for (photo of selectedFacility()!.photos; track photo.id) {
@@ -137,16 +194,24 @@ interface FacilitySearchResult {
             </div>
           }
 
-          <div class="chip-row">
-            @for (feature of selectedAmenities(); track feature) {
-              <span class="chip">{{ feature }}</span>
-            }
+          <div class="detail-section">
+            <h4>Amenities</h4>
+            <div class="chip-row">
+              @for (feature of selectedAmenities(); track feature) {
+                <span class="chip">{{ feature }}</span>
+              }
+            </div>
           </div>
 
           @if (pendingPaymentBooking(); as pending) {
             <div class="space-bottom hours-row">
               <p class="meta">Slot {{ pending.slotLabel }} reserved &mdash; complete payment to confirm your booking.</p>
             </div>
+            <p class="meta booking-total">
+              <span>Parking: &#8377;{{ pending.amount }}</span>
+              @if (pendingServicesCost() > 0) { <span> + Services: &#8377;{{ pendingServicesCost() }}</span> }
+              <strong> = Total: &#8377;{{ pendingTotal() }}</strong>
+            </p>
             <div class="space-bottom hours-row">
               <label class="hours-input">
                 Payment method
@@ -157,45 +222,78 @@ interface FacilitySearchResult {
                 </select>
               </label>
               <button class="primary sm" [disabled]="paying()" (click)="confirmPayment()">
-                {{ paying() ? 'Processing…' : 'Pay ₹' + pending.amount }}
+                {{ paying() ? 'Processing…' : 'Pay ₹' + pendingTotal() }}
               </button>
               <button class="ghost sm" [disabled]="paying()" (click)="skipPayment()">Pay later</button>
             </div>
-          } @else {
-            @if (vehicles().length === 0) {
-              <p class="meta">You have no vehicles yet. <a routerLink="/vehicles">Add a vehicle</a> to book a slot.</p>
+            @if (pendingServicesCost() > 0) {
+              <p class="hint">₹{{ pending.amount }} is charged now for the slot; the ₹{{ pendingServicesCost() }} services amount is confirmed with the facility directly.</p>
             }
-            <div class="space-bottom hours-row">
-              <label class="hours-input">
-                Vehicle
-                <select [(ngModel)]="selectedVehicleId">
-                  @for (v of vehicles(); track v.id) {
-                    <option [ngValue]="v.id">{{ v.registrationNumber }}</option>
+          } @else {
+            <div class="detail-section">
+              <h4>Book a slot</h4>
+              @if (vehicles().length === 0) {
+                <p class="meta">You have no vehicles yet. <a routerLink="/vehicles">Add a vehicle</a> to book a slot.</p>
+              }
+              <div class="space-bottom hours-row">
+                <label class="hours-input">
+                  Vehicle
+                  <select [(ngModel)]="selectedVehicleId">
+                    @for (v of vehicles(); track v.id) {
+                      <option [ngValue]="v.id">{{ v.registrationNumber }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="hours-input">
+                  Start date & time
+                  <input type="datetime-local" [(ngModel)]="bookingStartAt" />
+                </label>
+                <label class="hours-input">
+                  End date & time
+                  <input type="datetime-local" [(ngModel)]="bookingEndAt" />
+                </label>
+              </div>
+              @if (selectedPricing().length) {
+                <p class="meta">
+                  @for (price of selectedPricing(); track price.unit) {
+                    <span>{{ unitLabel(price.unit) }}: &#8377;{{ price.basePrice }}&nbsp;&nbsp;</span>
                   }
-                </select>
-              </label>
-              <label class="hours-input">
-                Start date & time
-                <input type="datetime-local" [(ngModel)]="bookingStartAt" />
-              </label>
-              <label class="hours-input">
-                End date & time
-                <input type="datetime-local" [(ngModel)]="bookingEndAt" />
-              </label>
+                </p>
+              }
+              @if (!firstBookableSpace()) {
+                <p class="error">This facility is currently fully occupied.</p>
+              }
+            </div>
+
+            @if (facilityServices().length) {
+              <div class="detail-section">
+                <h4>Add value-added services (optional)</h4>
+                <p class="muted">Offered and priced by this facility.</p>
+                <div class="facility-list">
+                  @for (svc of facilityServices(); track svc.serviceType) {
+                    <label class="card service-row">
+                      <span class="service-check">
+                        <input type="checkbox" [checked]="selectedServiceTypes().has(svc.serviceType)"
+                          (change)="toggleService(svc.serviceType)" />
+                        <span>{{ nameFor(svc.serviceType) }}</span>
+                      </span>
+                      <span class="service-price">&#8377;{{ svc.price }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+            }
+
+            <div class="detail-section space-bottom hours-row booking-total-row">
+              <p class="meta booking-total">
+                <span>Parking: &#8377;{{ parkingCost() }}</span>
+                @if (servicesCost() > 0) { <span> + Services: &#8377;{{ servicesCost() }}</span> }
+                <strong> = Total: &#8377;{{ totalCost() }}</strong>
+              </p>
               <button class="primary sm" [disabled]="!selectedVehicleId || !firstBookableSpace()" (click)="bookSelected()">
                 {{ selectedVehicleId ? 'Book now' : 'Add a vehicle to book' }}
               </button>
             </div>
-            @if (selectedPricing().length) {
-              <p class="meta">
-                @for (price of selectedPricing(); track price.unit) {
-                  <span>{{ unitLabel(price.unit) }}: &#8377;{{ price.basePrice }}&nbsp;&nbsp;</span>
-                }
-              </p>
-            }
-            @if (!firstBookableSpace()) {
-              <p class="error">This facility is currently fully occupied.</p>
-            }
           }
         }
       </div>
@@ -227,8 +325,13 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
   bookingStartAt = '';
   bookingEndAt = '';
   pendingPaymentBooking = signal<BookingDto | null>(null);
+  pendingServicesCost = signal(0);
   payMethod: PaymentMethod = PaymentMethod.UPI;
   paying = signal(false);
+  compareIds = signal<Set<string>>(new Set());
+  showCompare = signal(false);
+  facilityServices = signal<FacilityServiceDto[]>([]);
+  selectedServiceTypes = signal<Set<ValueAddedServiceType>>(new Set());
 
   private map?: L.Map;
   private markers: L.Layer[] = [];
@@ -252,7 +355,7 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     3: 'Month',
   };
 
-  constructor(private parking: ParkingService, private geo: GeocodingService) {}
+  constructor(private parking: ParkingService, private serviceBookings: ServiceBookingService, private geo: GeocodingService) {}
 
   ngOnInit(): void {
     this.parking.vehicles().subscribe((v) => {
@@ -347,6 +450,8 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     this.ensureBookingWindowDefaults();
     this.error.set(null);
     this.facilityLoading.set(true);
+    this.facilityServices.set([]);
+    this.selectedServiceTypes.set(new Set());
 
     this.parking.facility(facility.facilityId).subscribe({
       next: (detail) => {
@@ -360,6 +465,11 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
         this.error.set('Could not load facility details.');
       },
     });
+
+    this.parking.facilityServices(facility.facilityId).subscribe({
+      next: (list) => this.facilityServices.set(list),
+      error: () => this.facilityServices.set([]),
+    });
   }
 
   closeFacility(): void {
@@ -367,6 +477,28 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectedFacility.set(null);
     this.facilityLoading.set(false);
     this.pendingPaymentBooking.set(null);
+    this.pendingServicesCost.set(0);
+    this.facilityServices.set([]);
+    this.selectedServiceTypes.set(new Set());
+  }
+
+  nameFor(type: ValueAddedServiceType): string {
+    return SERVICE_NAMES[type] ?? ValueAddedServiceType[type];
+  }
+
+  toggleService(type: ValueAddedServiceType): void {
+    this.selectedServiceTypes.update((set) => {
+      const next = new Set(set);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  }
+
+  private bookSelectedServices(facilityId: string): void {
+    for (const serviceType of this.selectedServiceTypes()) {
+      this.serviceBookings.create({ facilityId, serviceType }).subscribe();
+    }
   }
 
   selectedAmenities(): string[] {
@@ -383,6 +515,29 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
 
   unitLabel(unit: number): string {
     return this.pricingUnitLabels[unit] ?? `Unit ${unit}`;
+  }
+
+  parkingCost(): number {
+    const space = this.firstBookableSpace();
+    if (!space) return 0;
+    const hourly = space.pricing.find((p) => p.unit === 0)?.basePrice ?? space.hourlyPrice ?? 0;
+    if (!hourly) return 0;
+    const start = new Date(this.bookingStartAt);
+    const end = new Date(this.bookingEndAt);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return 0;
+    const hours = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60));
+    return Math.round(hourly * hours * 100) / 100;
+  }
+
+  servicesCost(): number {
+    const selected = this.selectedServiceTypes();
+    return this.facilityServices()
+      .filter((svc) => selected.has(svc.serviceType))
+      .reduce((sum, svc) => sum + svc.price, 0);
+  }
+
+  totalCost(): number {
+    return Math.round((this.parkingCost() + this.servicesCost()) * 100) / 100;
   }
 
   bookSelected(): void {
@@ -404,8 +559,13 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    const facilityId = this.selectedFacilitySummary()?.facilityId;
+    const servicesCostAtBooking = this.servicesCost();
     this.parking.book(selectedSpaceId, this.selectedVehicleId, start.toISOString(), end.toISOString()).subscribe({
       next: (booking) => {
+        if (facilityId) this.bookSelectedServices(facilityId);
+        this.pendingServicesCost.set(servicesCostAtBooking);
+        this.selectedServiceTypes.set(new Set());
         if (booking.amount > 0 && booking.paymentStatus !== PaymentStatus.Captured) {
           // Paid slot: hold the modal open on a payment step instead of closing immediately.
           this.payMethod = PaymentMethod.UPI;
@@ -418,6 +578,12 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (e) => this.error.set(e?.error?.error?.message ?? 'Booking failed.'),
     });
+  }
+
+  pendingTotal(): number {
+    const pending = this.pendingPaymentBooking();
+    if (!pending) return 0;
+    return Math.round((pending.amount + this.pendingServicesCost()) * 100) / 100;
   }
 
   confirmPayment(): void {
@@ -442,6 +608,20 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     const pending = this.pendingPaymentBooking();
     if (pending) this.booked.set(pending);
     this.closeFacility();
+  }
+
+  toggleCompare(facilityId: string): void {
+    this.compareIds.update((ids) => {
+      const next = new Set(ids);
+      if (next.has(facilityId)) next.delete(facilityId);
+      else if (next.size < 3) next.add(facilityId);
+      return next;
+    });
+  }
+
+  compareList(): FacilitySearchResult[] {
+    const ids = this.compareIds();
+    return this.facilities().filter((f) => ids.has(f.facilityId));
   }
 
   statusLabel(status: SpaceStatus): string {

@@ -174,3 +174,40 @@ public class ServiceBookingPlaceholderConfig : IEntityTypeConfiguration<Notifica
         e.HasIndex(x => new { x.UserId, x.ReadAt });
     }
 }
+
+public class SavedPaymentMethodConfig : IEntityTypeConfiguration<SavedPaymentMethod>
+{
+    public void Configure(EntityTypeBuilder<SavedPaymentMethod> e)
+    {
+        e.HasKey(x => x.Id);
+        e.Property(x => x.Brand).HasMaxLength(30);
+        e.Property(x => x.Last4).HasMaxLength(4);
+        e.Property(x => x.GatewayToken).HasMaxLength(200);
+        e.HasIndex(x => x.UserId);
+        e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class ServiceBookingConfig : IEntityTypeConfiguration<ServiceBooking>
+{
+    public void Configure(EntityTypeBuilder<ServiceBooking> e)
+    {
+        e.HasKey(x => x.Id);
+        e.Property(x => x.Amount).HasPrecision(10, 2);
+        e.HasIndex(x => new { x.UserId, x.Status });
+        e.HasIndex(x => x.FacilityId);
+        e.HasOne(x => x.Facility).WithMany().HasForeignKey(x => x.FacilityId).OnDelete(DeleteBehavior.Restrict);
+        e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class FacilityServiceConfig : IEntityTypeConfiguration<FacilityService>
+{
+    public void Configure(EntityTypeBuilder<FacilityService> e)
+    {
+        e.HasKey(x => x.Id);
+        e.Property(x => x.Price).HasPrecision(10, 2);
+        e.HasIndex(x => new { x.FacilityId, x.ServiceType }).IsUnique();
+        e.HasOne(x => x.Facility).WithMany(f => f.Services).HasForeignKey(x => x.FacilityId).OnDelete(DeleteBehavior.Cascade);
+    }
+}

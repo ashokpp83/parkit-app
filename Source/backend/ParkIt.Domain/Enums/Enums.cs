@@ -36,5 +36,18 @@ public enum VerificationRecordStatus { Pending, Approved, Rejected }
 public enum SubscriptionPlanType { DailyCommuter, Resident, Corporate, Night, Weekend, Monthly }
 public enum NotificationChannel { Push, SMS, WhatsApp, InApp }
 public enum NotificationType { Booking, Cancellation, Expiry, Alert, Payout, GuaranteeFailover }
-public enum ValueAddedServiceType { CarWash, InsuranceRenewal, FastagRecharge }
+public enum ValueAddedServiceType
+{
+    CarWashExterior,
+    CarWashFull,
+    EvChargingLevel1,
+    EvChargingLevel2,
+    TireChange,
+    OilChange,
+    RoadsideAssistance,
+    CarAccessories,
+    CarDetailing,
+    InsuranceRenewal,
+    FastagRecharge
+}
 public enum ServiceBookingStatus { Requested, InProgress, Completed, Cancelled }

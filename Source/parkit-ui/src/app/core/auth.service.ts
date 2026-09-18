@@ -22,6 +22,15 @@ export class AuthService {
       .pipe(tap((r) => this.persist(r)));
   }
 
+  loginWithOtp(phoneNumber: string, code: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.base}/auth/login/otp`, { phoneNumber, code })
+      .pipe(tap((r) => this.persist(r)));
+  }
+
+  sendOtp(phoneNumber: string): Observable<{ sent: boolean; devCode?: string | null }> {
+    return this.http.post<{ sent: boolean; devCode?: string | null }>(`${this.base}/auth/otp/send`, { phoneNumber });
+  }
+
   register(payload: {
     fullName: string; email: string; phoneNumber: string; password: string; role: number;
   }): Observable<AuthResponse> {

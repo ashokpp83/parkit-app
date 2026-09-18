@@ -85,6 +85,18 @@ public class ParkingController : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("facilities/{facilityId:guid}/services")]
+    public async Task<ActionResult<IReadOnlyList<FacilityServiceDto>>> GetFacilityServices(Guid facilityId, CancellationToken ct)
+        => Ok(await _parking.GetFacilityServicesAsync(facilityId, enabledOnly: true, ct));
+
+    [HttpGet("facilities/{facilityId:guid}/services/manage")]
+    public async Task<ActionResult<IReadOnlyList<FacilityServiceDto>>> GetFacilityServicesForOwner(Guid facilityId, CancellationToken ct)
+        => Ok(await _parking.GetFacilityServicesAsync(facilityId, enabledOnly: false, ct));
+
+    [HttpPut("facilities/{facilityId:guid}/services")]
+    public async Task<ActionResult<IReadOnlyList<FacilityServiceDto>>> UpsertFacilityServices(Guid facilityId, [FromBody] UpsertFacilityServicesRequest req, CancellationToken ct)
+        => Ok(await _parking.UpsertFacilityServicesAsync(facilityId, req, _currentUser.RequireUserId(), ct));
+
     [HttpGet("owner/dashboard/statistics")]
     public async Task<ActionResult<OwnerDashboardStatisticsDto>> GetDashboardStatistics(CancellationToken ct)
         => Ok(await _parking.GetOwnerDashboardStatisticsAsync(_currentUser.RequireUserId(), ct));

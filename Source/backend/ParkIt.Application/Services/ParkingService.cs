@@ -573,6 +573,44 @@ public class ParkingService
         await _db.SaveChangesAsync(ct);
     }
 
+    public async Task<IReadOnlyList<FacilityServiceDto>> GetFacilityServicesAsync(Guid facilityId, bool enabledOnly, CancellationToken ct = default)
+    {
+        var query = _db.FacilityServices.Where(s => s.FacilityId == facilityId);
+        if (enabledOnly) query = query.Where(s => s.IsEnabled);
+        return await query
+            .OrderBy(s => s.ServiceType)
+            .Select(s => new FacilityServiceDto(s.ServiceType, s.Price, s.IsEnabled))
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<FacilityServiceDto>> UpsertFacilityServicesAsync(Guid facilityId, UpsertFacilityServicesRequest req, Guid ownerUserId, CancellationToken ct = default)
+    {
+        var facility = await _db.ParkingFacilities
+            .Include(f => f.Provider)
+            .Include(f => f.Services)
+            .FirstOrDefaultAsync(f => f.Id == facilityId, ct)
+            ?? throw AppException.NotFound("Parking facility");
+
+        if (facility.Provider?.OwnerUserId != ownerUserId)
+            throw AppException.Forbidden("Only the facility owner can manage this facility's services.");
+
+        foreach (var item in req.Services)
+        {
+            if (item.Price < 0) throw AppException.BadRequest("Service price cannot be negative.");
+        }
+
+        _db.FacilityServices.RemoveRange(facility.Services.ToList());
+        await _db.SaveChangesAsync(ct);
+
+        var entries = req.Services
+            .Select(s => new FacilityService { FacilityId = facilityId, ServiceType = s.ServiceType, Price = s.Price, IsEnabled = s.IsEnabled })
+            .ToList();
+        _db.FacilityServices.AddRange(entries);
+        await _db.SaveChangesAsync(ct);
+
+        return entries.Select(e => new FacilityServiceDto(e.ServiceType, e.Price, e.IsEnabled)).ToList();
+    }
+
     public async Task<OwnerDashboardStatisticsDto> GetOwnerDashboardStatisticsAsync(Guid ownerUserId, CancellationToken ct = default)
     {
         // Get all owner's facilities and bookings

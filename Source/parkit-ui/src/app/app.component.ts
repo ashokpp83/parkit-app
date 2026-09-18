@@ -21,6 +21,8 @@ import { UserRole } from './core/models';
             <a routerLink="/owner/facilities" routerLinkActive="active">Facilities</a>
             <a routerLink="/owner/bookings" routerLinkActive="active">Booking History</a>
           }
+          <a routerLink="/payments" routerLinkActive="active">Payments</a>
+          <a routerLink="/services" routerLinkActive="active">Services</a>
         </nav>
         <div class="user">
           <span>{{ auth.user()?.fullName }}</span>
@@ -29,6 +31,18 @@ import { UserRole } from './core/models';
       }
     </header>
     <main class="container"><router-outlet /></main>
+    @if (auth.isAuthenticated()) {
+      <nav class="bottom-nav">
+        @if (auth.user()?.role === UserRole.Driver) {
+          <a routerLink="/search" routerLinkActive="active"><span>🔍</span>Find</a>
+          <a routerLink="/bookings" routerLinkActive="active"><span>📅</span>Bookings</a>
+        }
+        @if (auth.user()?.role === UserRole.Owner) {
+          <a routerLink="/owner/facilities" routerLinkActive="active"><span>🏢</span>Facilities</a>
+        }
+        <a routerLink="/payments" routerLinkActive="active"><span>💳</span>Payments</a>
+      </nav>
+    }
   `,
 })
 export class AppComponent {

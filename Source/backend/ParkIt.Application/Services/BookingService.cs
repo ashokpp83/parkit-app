@@ -185,7 +185,8 @@ public class BookingService
         await query.Select(b => new BookingDto(
             b.Id,
             b.SpaceId,
-            b.Space!.Facility!.Name,
+            b.Space!.FacilityId,
+            b.Space.Facility!.Name,
             b.Space.SlotLabel,
             b.VehicleId,
             b.Vehicle!.RegistrationNumber,

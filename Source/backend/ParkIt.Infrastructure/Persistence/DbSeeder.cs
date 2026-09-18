@@ -156,18 +156,29 @@ public static class DbSeeder
         db.ParkingSpaces.AddRange(spaces);
         await db.SaveChangesAsync(ct);
 
+        // Each facility owner selects a subset of value-added services to offer, with their own pricing.
+        db.FacilityServices.AddRange(
+            new FacilityService { FacilityId = facility1.Id, ServiceType = ValueAddedServiceType.CarWashExterior, Price = 150, IsEnabled = true },
+            new FacilityService { FacilityId = facility1.Id, ServiceType = ValueAddedServiceType.CarWashFull, Price = 350, IsEnabled = true },
+            new FacilityService { FacilityId = facility1.Id, ServiceType = ValueAddedServiceType.EvChargingLevel2, Price = 200, IsEnabled = true },
+            new FacilityService { FacilityId = facility2.Id, ServiceType = ValueAddedServiceType.CarWashExterior, Price = 120, IsEnabled = true },
+            new FacilityService { FacilityId = facility2.Id, ServiceType = ValueAddedServiceType.RoadsideAssistance, Price = 500, IsEnabled = true },
+            new FacilityService { FacilityId = facility3.Id, ServiceType = ValueAddedServiceType.CarWashFull, Price = 300, IsEnabled = true },
+            new FacilityService { FacilityId = facility3.Id, ServiceType = ValueAddedServiceType.TireChange, Price = 250, IsEnabled = true },
+            new FacilityService { FacilityId = facility3.Id, ServiceType = ValueAddedServiceType.CarDetailing, Price = 900, IsEnabled = true });
+        await db.SaveChangesAsync(ct);
+
         // Create sample bookings with various dates and times to populate dashboard
         var bookings = new List<Booking>();
         var now = DateTime.UtcNow;
         var random = new Random();
 
-        // Generate bookings across last 60 days
-        for (int dayOffset = -60; dayOffset <= -1; dayOffset++)
+        // A handful of historical bookings across the last couple of weeks, spread across drivers.
+        for (int dayOffset = -14; dayOffset <= -1; dayOffset += 2)
         {
             var bookingDate = now.AddDays(dayOffset);
 
-            // Multiple bookings per day at different hours and by different drivers
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 1; i++)
             {
                 var space = spaces[random.Next(spaces.Count)];
                 var driver = new[] { driver1, driver2, driver3, driver4, driver5 }[random.Next(5)];
@@ -194,8 +205,8 @@ public static class DbSeeder
             }
         }
 
-        // Add some future bookings for today and tomorrow
-        for (int i = 0; i < 5; i++)
+        // A couple of upcoming bookings for today.
+        for (int i = 0; i < 2; i++)
         {
             var space = spaces[random.Next(spaces.Count)];
             var driver = new[] { driver1, driver2, driver3, driver4, driver5 }[random.Next(5)];
@@ -221,7 +232,42 @@ public static class DbSeeder
             bookings.Add(booking);
         }
 
+        // Guarantee every driver has parked at every facility at least once, so each driver
+        // sees all three facilities (and their value-added services) in the car-owner Services picker.
+        var drivers = new[] { driver1, driver2, driver3, driver4, driver5 };
+        var facilitySpaces = new[] { facility1, facility2, facility3 }
+            .ToDictionary(f => f.Id, f => spaces.First(s => s.FacilityId == f.Id));
+
+        foreach (var driver in drivers)
+        {
+            var vehicle = db.Vehicles.First(v => v.UserId == driver.Id);
+            foreach (var space in facilitySpaces.Values)
+            {
+                bookings.Add(new Booking
+                {
+                    SpaceId = space.Id,
+                    DriverUserId = driver.Id,
+                    VehicleId = vehicle.Id,
+                    StartTime = now.AddDays(-random.Next(1, 45)).Date.AddHours(9),
+                    EndTime = now.AddDays(-random.Next(1, 45)).Date.AddHours(12),
+                    Amount = random.Next(150, 800),
+                    Status = BookingStatus.Completed,
+                    IsGuaranteed = true
+                });
+            }
+        }
+
         db.Bookings.AddRange(bookings);
+        await db.SaveChangesAsync(ct);
+
+        // Sample value-added service bookings, placed by car owners against the facilities they've
+        // parked at, so both sides (facility owner and car owner) have data to look at immediately.
+        db.ServiceBookings.AddRange(
+            new ServiceBooking { UserId = driver1.Id, FacilityId = facility1.Id, ServiceType = ValueAddedServiceType.CarWashExterior, Amount = 150, Status = ServiceBookingStatus.Completed },
+            new ServiceBooking { UserId = driver2.Id, FacilityId = facility1.Id, ServiceType = ValueAddedServiceType.EvChargingLevel2, Amount = 200, Status = ServiceBookingStatus.InProgress },
+            new ServiceBooking { UserId = driver3.Id, FacilityId = facility2.Id, ServiceType = ValueAddedServiceType.RoadsideAssistance, Amount = 500, Status = ServiceBookingStatus.Requested },
+            new ServiceBooking { UserId = driver4.Id, FacilityId = facility3.Id, ServiceType = ValueAddedServiceType.CarDetailing, Amount = 900, Status = ServiceBookingStatus.Completed },
+            new ServiceBooking { UserId = driver5.Id, FacilityId = facility3.Id, ServiceType = ValueAddedServiceType.TireChange, Amount = 250, Status = ServiceBookingStatus.Requested });
         await db.SaveChangesAsync(ct);
     }
 }

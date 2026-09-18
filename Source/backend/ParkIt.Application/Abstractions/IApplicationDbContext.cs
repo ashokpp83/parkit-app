@@ -21,6 +21,7 @@ public interface IApplicationDbContext
     DbSet<SpaceAvailability> SpaceAvailabilities { get; }
     DbSet<PricingRule> PricingRules { get; }
     DbSet<FacilityPhoto> FacilityPhotos { get; }
+    DbSet<FacilityService> FacilityServices { get; }
     DbSet<Booking> Bookings { get; }
     DbSet<Payment> Payments { get; }
     DbSet<Payout> Payouts { get; }
@@ -29,6 +30,8 @@ public interface IApplicationDbContext
     DbSet<Dispute> Disputes { get; }
     DbSet<Notification> Notifications { get; }
     DbSet<SubscriptionPlan> SubscriptionPlans { get; }
+    DbSet<SavedPaymentMethod> SavedPaymentMethods { get; }
+    DbSet<ServiceBooking> ServiceBookings { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
