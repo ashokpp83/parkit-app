@@ -57,9 +57,11 @@ const SERVICE_NAMES: Record<ValueAddedServiceType, string> = {
               </div>
               <div class="chip-row">
                 <span>₹{{ offer.price }}</span>
-                <button class="primary sm" [disabled]="booking() === offer.serviceType" (click)="book(offer)">
-                  {{ booking() === offer.serviceType ? 'Booking…' : 'Book' }}
-                </button>
+                @if (!isOwner) {
+                  <button class="primary sm" [disabled]="booking() === offer.serviceType" (click)="book(offer)">
+                    {{ booking() === offer.serviceType ? 'Booking…' : 'Book' }}
+                  </button>
+                }
               </div>
             </div>
           }
@@ -67,20 +69,22 @@ const SERVICE_NAMES: Record<ValueAddedServiceType, string> = {
       }
     }
 
-    <h2>My Service Bookings</h2>
-    <div class="facility-list">
-      @for (b of myBookings(); track b.id) {
-        <div class="card facility-item">
-          <div>
-            <strong>{{ nameFor(b.serviceType) }}</strong>
-            <p class="muted">{{ b.facilityName }} • ₹{{ b.amount }}</p>
+    @if (!isOwner) {
+      <h2>My Service Bookings</h2>
+      <div class="facility-list">
+        @for (b of myBookings(); track b.id) {
+          <div class="card facility-item">
+            <div>
+              <strong>{{ nameFor(b.serviceType) }}</strong>
+              <p class="muted">{{ b.facilityName }} • ₹{{ b.amount }}</p>
+            </div>
+            <div>{{ statusLabel(b.status) }}</div>
           </div>
-          <div>{{ statusLabel(b.status) }}</div>
-        </div>
-      } @empty {
-        <p class="muted">No service bookings yet.</p>
-      }
-    </div>
+        } @empty {
+          <p class="muted">No service bookings yet.</p>
+        }
+      </div>
+    }
   `,
 })
 export class ServicesComponent implements OnInit {

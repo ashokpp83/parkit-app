@@ -167,16 +167,23 @@ cd android
 ### Known failure: Gradle "not a regular file" / "Unable to delete directory" on OneDrive
 
 This repo lives under a OneDrive-synced folder. OneDrive's Files On-Demand feature can turn
-freshly-written build output (e.g. `android/app/src/main/assets/public/*.js`, or files under
-`node_modules/@capacitor/*/android/build`) into cloud-only placeholders (NTFS reparse points)
-right after `cap sync` writes them, before Gradle reads them. Gradle then fails with either:
+freshly-written build output into cloud-only placeholders (NTFS reparse points) right after it's
+written, before Gradle reads/deletes it on the next task. This has shown up in at least three
+different directories so far - it's not specific to one path, it can hit *any* directory Gradle
+just wrote to:
+
+- `android/app/src/main/assets/public/*.js` (right after `cap sync`)
+- `node_modules/@capacitor/*/android/build`
+- `android/app/build/intermediates/incremental/packageDebug/tmp`
+
+Gradle fails with one of:
 
 ```
 java.io.IOException: Cannot snapshot ...assets\public\chunk-XXXX.js: not a regular file
 ```
 or
 ```
-java.io.IOException: Unable to delete directory '...\node_modules\@capacitor\...\build\...'
+java.io.IOException: Unable to delete directory '...\build\intermediates\...\tmp'
 Failed to delete some children. This might happen because a process has files open...
 ```
 
@@ -196,9 +203,20 @@ cd Source/parkit-ui/android/app/src/main/assets/public
 powershell.exe -NoProfile -Command "Get-ChildItem -Path '.' -Recurse -File | ForEach-Object { attrib.exe -U +P \"$($_.FullName)\" }"
 ```
 
-Then re-run `./gradlew.bat assembleDebug` from `Source/parkit-ui/android`. If the `node_modules/@capacitor/*/android/build` variant of the error shows up instead, `./gradlew.bat --stop`
-first (stale daemon can also hold a lock) and/or delete the specific stuck
-`build/intermediates/incremental/debug/packageDebugResources` directory before retrying.
+Then re-run `./gradlew.bat assembleDebug` from `Source/parkit-ui/android`. If a different
+directory is the stuck one (error message names it), the general recipe is the same three steps,
+adapted to that path:
+
+1. `./gradlew.bat --stop` (a stale daemon can independently hold its own lock).
+2. `rm -rf` the specific stuck directory the error names (e.g.
+   `app/build/intermediates/incremental/packageDebug/tmp`, or
+   `app/build/intermediates/incremental/debug/packageDebugResources`) - don't delete all of
+   `app/build`, the targeted directory is enough.
+3. Retry `assembleDebug`. If it fails again on the *same* directory, pin it like the assets
+   folder above; if it fails on a *new* directory each time, that's expected - OneDrive is
+   re-virtualizing whatever Gradle wrote most recently, so just repeat steps 1-2 for the newly
+   named directory until a run gets through cleanly (in practice this has taken 1-2 retries, not
+   more).
 
 Verify the build actually picked up the latest frontend changes by checking the APK's timestamp
 against `android/app/src/main/assets/public/*` - if the APK is older than the assets, Gradle's
