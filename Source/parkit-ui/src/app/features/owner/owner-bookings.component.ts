@@ -3,9 +3,23 @@ import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { BookingDto, PaymentStatus } from '../../core/models';
+import { BookingDto, OwnerServiceBookingDto, PaymentStatus, ValueAddedServiceType } from '../../core/models';
 import { ParkingService } from '../../core/parking.service';
 import { ServiceBookingService } from '../../core/service-booking.service';
+
+const SERVICE_NAMES: Record<ValueAddedServiceType, string> = {
+  [ValueAddedServiceType.CarWashExterior]: 'Exterior wash',
+  [ValueAddedServiceType.CarWashFull]: 'Interior & exterior wash',
+  [ValueAddedServiceType.EvChargingLevel1]: 'EV charging (Level 1)',
+  [ValueAddedServiceType.EvChargingLevel2]: 'EV charging (Level 2, fast)',
+  [ValueAddedServiceType.TireChange]: 'Tire change',
+  [ValueAddedServiceType.OilChange]: 'Oil change',
+  [ValueAddedServiceType.RoadsideAssistance]: 'Roadside assistance',
+  [ValueAddedServiceType.CarAccessories]: 'Car accessories',
+  [ValueAddedServiceType.CarDetailing]: 'Car detailing',
+  [ValueAddedServiceType.InsuranceRenewal]: 'Insurance renewal',
+  [ValueAddedServiceType.FastagRecharge]: 'FASTag recharge',
+};
 
 @Component({
   selector: 'app-owner-bookings',
@@ -53,6 +67,14 @@ import { ServiceBookingService } from '../../core/service-booking.service';
                   </span>
                 }
               </div>
+              @if (servicesFor(b).length > 0) {
+                <div class="meta service-breakdown">
+                  Services booked:
+                  @for (s of servicesFor(b); track s.id) {
+                    <span class="chip">{{ nameFor(s.serviceType) }} — ₹{{ s.amount }}</span>
+                  }
+                </div>
+              }
             </div>
           }
         </div>
@@ -98,6 +120,21 @@ import { ServiceBookingService } from '../../core/service-booking.service';
       background: rgba(0, 128, 255, 0.1);
       font-weight: 600;
     }
+
+    .service-breakdown {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .service-breakdown .chip {
+      background: var(--surface-2);
+      border-radius: 12px;
+      padding: 2px 10px;
+      font-size: 12px;
+    }
   `],
 })
 export class OwnerBookingsComponent {
@@ -113,8 +150,8 @@ export class OwnerBookingsComponent {
     [PaymentStatus.Failed]: 'Payment failed',
   };
   // Best-effort correlation: services aren't linked to a specific parking booking,
-  // so we attribute a customer's service spend at a facility to their bookings there.
-  private servicesByFacilityAndCustomer = new Map<string, number>();
+  // so we attribute a customer's service bookings at a facility to their bookings there.
+  private servicesByFacilityAndCustomer = new Map<string, OwnerServiceBookingDto[]>();
 
   constructor(private parking: ParkingService, private serviceBookings: ServiceBookingService) {
     this.loadOwnerBookings();
@@ -128,8 +165,16 @@ export class OwnerBookingsComponent {
     return this.paymentLabels[status] ?? `Status ${status}`;
   }
 
+  nameFor(type: ValueAddedServiceType): string {
+    return SERVICE_NAMES[type] ?? ValueAddedServiceType[type];
+  }
+
+  servicesFor(b: BookingDto): OwnerServiceBookingDto[] {
+    return this.servicesByFacilityAndCustomer.get(`${b.facilityId}|${b.driverEmail}`) ?? [];
+  }
+
   servicesAmountFor(b: BookingDto): number {
-    return this.servicesByFacilityAndCustomer.get(`${b.facilityId}|${b.driverEmail}`) ?? 0;
+    return this.servicesFor(b).reduce((sum, s) => sum + s.amount, 0);
   }
 
   private loadOwnerBookings(): void {
@@ -149,12 +194,14 @@ export class OwnerBookingsComponent {
     forkJoin(
       facilityIds.map((id) => this.serviceBookings.listForFacility(id).pipe(catchError(() => of([]))))
     ).subscribe((results) => {
-      const map = new Map<string, number>();
+      const map = new Map<string, OwnerServiceBookingDto[]>();
       results.forEach((bookings, i) => {
         const facilityId = facilityIds[i];
         for (const sb of bookings) {
           const key = `${facilityId}|${sb.customerEmail}`;
-          map.set(key, (map.get(key) ?? 0) + sb.amount);
+          const list = map.get(key) ?? [];
+          list.push(sb);
+          map.set(key, list);
         }
       });
       this.servicesByFacilityAndCustomer = map;

@@ -1,5 +1,9 @@
 # Low-cost cloud deployment
 
+> This is deployed today on Render (GitHub-connected) with Neon PostgreSQL. For the concrete,
+> tested deploy steps and the EF Core migration gotcha, see the `deploy-parkit` skill at
+> `Source/.claude/skills/deploy-parkit/SKILL.md`.
+
 ## Recommended MVP architecture
 
 - Deploy `backend/` as a container to Render or another low-cost .NET container host.

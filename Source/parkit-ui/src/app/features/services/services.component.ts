@@ -2,7 +2,8 @@ import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ServiceBookingService } from '../../core/service-booking.service';
 import { ParkingService } from '../../core/parking.service';
-import { FacilityServiceDto, ServiceBookingDto, ValueAddedServiceType } from '../../core/models';
+import { AuthService } from '../../core/auth.service';
+import { FacilityServiceDto, ServiceBookingDto, UserRole, ValueAddedServiceType } from '../../core/models';
 
 const SERVICE_NAMES: Record<ValueAddedServiceType, string> = {
   [ValueAddedServiceType.CarWashExterior]: 'Exterior wash',
@@ -35,7 +36,11 @@ const SERVICE_NAMES: Record<ValueAddedServiceType, string> = {
         }
       </select>
       @if (facilities().length === 0) {
-        <p class="muted">Book a parking space first — services are offered by the facilities you've parked at.</p>
+        @if (isOwner) {
+          <p class="muted">You don't have any facilities yet — add one from the Facilities page.</p>
+        } @else {
+          <p class="muted">Book a parking space first — services are offered by the facilities you've parked at.</p>
+        }
       }
     </div>
 
@@ -86,18 +91,32 @@ export class ServicesComponent implements OnInit {
   selectedFacilityId: string | null = null;
 
   private statusLabels = ['Requested', 'In progress', 'Completed', 'Cancelled'];
+  isOwner = false;
 
-  constructor(private serviceBookings: ServiceBookingService, private parking: ParkingService) {}
+  constructor(
+    private serviceBookings: ServiceBookingService,
+    private parking: ParkingService,
+    private auth: AuthService,
+  ) {}
 
   ngOnInit(): void {
-    this.parking.myBookings().subscribe({
-      next: (bookings) => {
-        const seen = new Map<string, string>();
-        for (const b of bookings) seen.set(b.facilityId, b.facilityName);
-        this.facilities.set(Array.from(seen, ([id, name]) => ({ id, name })));
-      },
-      error: () => this.facilities.set([]),
-    });
+    this.isOwner = this.auth.user()?.role === UserRole.Owner;
+
+    if (this.isOwner) {
+      this.parking.myFacilities().subscribe({
+        next: (list) => this.facilities.set(list.map((f) => ({ id: f.id, name: f.name }))),
+        error: () => this.facilities.set([]),
+      });
+    } else {
+      this.parking.myBookings().subscribe({
+        next: (bookings) => {
+          const seen = new Map<string, string>();
+          for (const b of bookings) seen.set(b.facilityId, b.facilityName);
+          this.facilities.set(Array.from(seen, ([id, name]) => ({ id, name })));
+        },
+        error: () => this.facilities.set([]),
+      });
+    }
     this.serviceBookings.list().subscribe((b) => this.myBookings.set(b));
   }
 
