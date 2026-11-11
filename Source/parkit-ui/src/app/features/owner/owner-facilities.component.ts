@@ -35,17 +35,20 @@ const ALL_SERVICE_TYPES = Object.keys(SERVICE_NAMES).map(Number) as ValueAddedSe
   standalone: true,
   imports: [FormsModule, CommonModule, RouterLink],
   template: `
-    <div class="owner-nav">
-      <h1>Facility Management</h1>
-      <div class="nav-links">
-        <a routerLink="/owner" class="nav-link">Dashboard</a>
-        <a routerLink="/owner/facilities" class="nav-link active">Facilities</a>
-        <a routerLink="/owner/bookings" class="nav-link">Bookings</a>
+    <div class="page-head">
+      <div>
+        <h1>Facilities</h1>
+        <p class="hint">{{ facilities().length }} listed · manage locations, pricing and services</p>
       </div>
+      <button class="primary sm" type="button" (click)="scrollToForm()">+ Add</button>
     </div>
-    <div class="card">
+    <div class="seg-tabs desktop-only">
+      <a routerLink="/owner/facilities" class="active">Facilities</a>
+      <a routerLink="/owner/bookings">Bookings</a>
+    </div>
+    <div class="card owner-shell">
       <div class="owner-layout">
-        <div class="owner-layout-map">
+        <div class="owner-layout-map" #formTop>
           <label>Pick location on map</label>
           <div #facilityMap class="leaflet-container facility-map"></div>
           <p class="hint">Search or click the map to set the facility location. The address is captured automatically.</p>
@@ -213,22 +216,25 @@ const ALL_SERVICE_TYPES = Object.keys(SERVICE_NAMES).map(Number) as ValueAddedSe
             } @else {
               <div class="facility-list">
                 @for (facility of facilities(); track facility.id) {
-                  <div class="facility-item">
+                  <div class="facility-item owned">
                     <div>
-                      <h3>{{ facility.name }}</h3>
+                      <div class="owned-title">
+                        <h3>{{ facility.name }}</h3>
+                        <span class="badge" [class.ok]="facility.isApproved" [class.warn]="!facility.isApproved">
+                          {{ facility.isApproved ? 'Live' : 'Review' }}
+                        </span>
+                      </div>
                       <p class="muted">{{ facility.addressText }}</p>
                       <p class="meta">
                         {{ facility.level || 'Ground' }} •
                         {{ facility.costType === CostType.Paid ? '₹' + (facility.hourlyPrice ?? 0) + '/hr' : 'Free' }} •
-                        {{ facility.availableSlots }}/{{ facility.totalSlots }} available •
-                        {{ facility.isApproved ? 'Approved' : 'Pending approval' }}
+                        {{ facility.availableSlots }}/{{ facility.totalSlots }} available
                       </p>
+                      <div class="card-actions">
+                        <button class="ghost sm" type="button" (click)="startEdit(facility); scrollToForm()">✏️ Edit</button>
+                        <button class="ghost sm" type="button" (click)="openServices(facility)">🧰 Services</button>
+                      </div>
                     </div>
-                    <span class="badge" [class.ok]="facility.isApproved" [class.warn]="!facility.isApproved">
-                      {{ facility.isApproved ? 'Live' : 'Review' }}
-                    </span>
-                    <button class="ghost sm" type="button" (click)="startEdit(facility)">Edit</button>
-                    <button class="ghost sm" type="button" (click)="openServices(facility)">Services</button>
                   </div>
                 }
               </div>
@@ -289,48 +295,41 @@ const ALL_SERVICE_TYPES = Object.keys(SERVICE_NAMES).map(Number) as ValueAddedSe
     }
   `,
   styles: [`
-    .owner-nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
-      background: var(--surface);
+    .owned { display: block; }
+    .owned > div { min-width: 0; }
+    .owned-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .owned .card-actions { margin-top: 10px; }
+    .owned .card-actions button { flex: 0 0 auto; }
+
+    @media (max-width: 1024px) {
+      /* Show the facility list first on small screens, then the map + form. */
+      .owner-layout { display: flex; flex-direction: column; gap: 14px; }
+      .owner-layout-details { display: contents; }
+      .owner-facilities-panel { order: -1; }
+      .owner-layout-map { order: 0; }
+      .owner-add-panel { order: 1; }
     }
 
-    .owner-nav h1 {
-      margin: 0;
-      font-size: 20px;
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 20px;
-    }
-
-    .nav-link {
-      color: var(--muted);
-      text-decoration: none;
-      padding: 8px 12px;
-      border-radius: 6px;
-      transition: all 0.2s;
-    }
-
-    .nav-link:hover {
-      color: var(--text);
-      background: var(--surface-2);
-    }
-
-    .nav-link.active {
-      color: var(--primary);
-      background: rgba(0, 128, 255, 0.1);
-      font-weight: 600;
+    @media (max-width: 768px) {
+      .desktop-only { display: none; }
+      .owner-shell { background: transparent; border: none; padding: 0; }
+      .owner-facilities-panel h2, .owner-add-panel h2 { margin-top: 4px; }
+      .owner-layout-map, .owner-add-panel, .owner-facilities-panel {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px;
+      }
+      .owned .card-actions button { flex: 1 1 0; }
+      .owner-location-row { flex-direction: column; }
+      .owner-location-row button { width: 100%; }
     }
   `],
 })
 export class OwnerFacilitiesComponent {
   @ViewChild('facilityMap') facilityMapEl!: ElementRef<HTMLDivElement>;
+  @ViewChild('formTop') private formTop?: ElementRef<HTMLElement>;
+
+  scrollToForm(): void {
+    this.formTop?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   readonly CostType = CostType;
   readonly VehicleType = VehicleType;
@@ -715,12 +714,17 @@ export class OwnerFacilitiesComponent {
 
   private setMapToCurrentLocation(): void {
     if (!navigator.geolocation) {
-      this.setCoordinates(this.form.latitude, this.form.longitude, true);
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => this.setCoordinates(pos.coords.latitude, pos.coords.longitude, true, 'Current location'),
-      () => this.setCoordinates(this.form.latitude, this.form.longitude, true),
+      (pos) => {
+        this.form.latitude = pos.coords.latitude;
+        this.form.longitude = pos.coords.longitude;
+        this.selectedLocation.set('Current location');
+        this.syncMap();
+      },
+      () => this.syncMap(),
+      { timeout: 10000, maximumAge: 60000 },
     );
   }
 

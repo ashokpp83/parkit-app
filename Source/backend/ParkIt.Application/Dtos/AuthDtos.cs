@@ -4,9 +4,9 @@ using ParkIt.Domain.Enums;
 namespace ParkIt.Application.Dtos;
 
 public record RegisterRequest(
-    [Required] string FullName,
-    [Required, EmailAddress] string Email,
-    [Required] string PhoneNumber,
+    [Required, MaxLength(150)] string FullName,
+    [Required, EmailAddress, MaxLength(255)] string Email,
+    [Required, MaxLength(20)] string PhoneNumber,
     [Required, MinLength(6)] string Password,
     UserRole Role = UserRole.Driver,
     string PreferredLanguage = "en");
@@ -16,6 +16,8 @@ public record OtpLoginRequest([Required] string PhoneNumber, [Required] string C
 public record RefreshRequest([Required] string RefreshToken);
 public record OtpSendRequest([Required] string PhoneNumber);
 public record OtpVerifyRequest([Required] string PhoneNumber, [Required] string Code);
+public record ForgotPasswordRequest([Required, EmailAddress] string Email);
+public record ResetPasswordRequest([Required, StringLength(64, MinimumLength = 64)] string Token, [Required, MinLength(6)] string Password);
 
 public record AuthResponse(
     string AccessToken,

@@ -465,6 +465,43 @@ namespace ParkIt.Infrastructure.Persistence.Migrations
                     b.ToTable("ParkingSpaces");
                 });
 
+            modelBuilder.Entity("ParkIt.Domain.Entities.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ConsumedAt")
+                        .IsConcurrencyToken()
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PasswordResetTokens");
+                });
+
             modelBuilder.Entity("ParkIt.Domain.Entities.Payment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1061,6 +1098,17 @@ namespace ParkIt.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Facility");
+                });
+
+            modelBuilder.Entity("ParkIt.Domain.Entities.PasswordResetToken", b =>
+                {
+                    b.HasOne("ParkIt.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ParkIt.Domain.Entities.Payment", b =>

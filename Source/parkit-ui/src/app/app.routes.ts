@@ -7,6 +7,8 @@ export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'search' },
   { path: 'login', loadComponent: () => import('./features/auth/login.component').then((m) => m.LoginComponent) },
   { path: 'register', loadComponent: () => import('./features/auth/register.component').then((m) => m.RegisterComponent) },
+  { path: 'forgot-password', loadComponent: () => import('./features/auth/forgot-password.component').then((m) => m.ForgotPasswordComponent) },
+  { path: 'reset-password', loadComponent: () => import('./features/auth/reset-password.component').then((m) => m.ResetPasswordComponent) },
   { path: 'search', canActivate: [authGuard, driverGuard], loadComponent: () => import('./features/search/search.component').then((m) => m.SearchComponent) },
   { path: 'bookings', canActivate: [authGuard, driverGuard], loadComponent: () => import('./features/bookings/bookings.component').then((m) => m.BookingsComponent) },
   { path: 'vehicles', canActivate: [authGuard, driverGuard], loadComponent: () => import('./features/vehicles/vehicles.component').then((m) => m.VehiclesComponent) },

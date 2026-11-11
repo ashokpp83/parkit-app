@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using ParkIt.Application.Abstractions;
 using ParkIt.Application.Dtos;
 using ParkIt.Application.Services;
@@ -28,6 +29,22 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest req, CancellationToken ct)
         => Ok(await _auth.LoginAsync(req, ct));
+
+    [EnableRateLimiting("password-recovery")]
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest req, CancellationToken ct)
+    {
+        await _auth.ForgotPasswordAsync(req, ct);
+        return Ok(new { message = "If an account exists for that email, a reset link has been sent." });
+    }
+
+    [EnableRateLimiting("password-recovery")]
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest req, CancellationToken ct)
+    {
+        await _auth.ResetPasswordAsync(req, ct);
+        return Ok(new { message = "Password updated. Please sign in." });
+    }
 
     [HttpPost("login/otp")]
     public async Task<ActionResult<AuthResponse>> LoginWithOtp(OtpLoginRequest req, CancellationToken ct)

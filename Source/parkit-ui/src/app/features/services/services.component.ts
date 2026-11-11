@@ -24,11 +24,15 @@ const SERVICE_NAMES: Record<ValueAddedServiceType, string> = {
   standalone: true,
   imports: [FormsModule],
   template: `
-    <h1>Value-Added Services</h1>
-    <p class="muted">Services are offered per facility by the facility owner. Pick a facility to see what it offers.</p>
+    <div class="page-head">
+      <div>
+        <h1>Services</h1>
+        <p class="hint">Car wash, EV charging and more, offered by each facility.</p>
+      </div>
+    </div>
 
     <div class="card">
-      <label>Facility</label>
+      <label class="first">Facility</label>
       <select [(ngModel)]="selectedFacilityId" (ngModelChange)="onFacilityChange()">
         <option [ngValue]="null">Select a facility…</option>
         @for (f of facilities(); track f.id) {
@@ -37,55 +41,56 @@ const SERVICE_NAMES: Record<ValueAddedServiceType, string> = {
       </select>
       @if (facilities().length === 0) {
         @if (isOwner) {
-          <p class="muted">You don't have any facilities yet — add one from the Facilities page.</p>
+          <p class="hint">You don't have any facilities yet — add one from the Facilities page.</p>
         } @else {
-          <p class="muted">Book a parking space first — services are offered by the facilities you've parked at.</p>
+          <p class="hint">Book a parking space first — services are offered by the facilities you've parked at.</p>
         }
       }
     </div>
 
     @if (selectedFacilityId) {
       <h2>Available services</h2>
-      @if (catalog().length === 0) {
-        <p class="muted">This facility hasn't listed any services yet.</p>
-      } @else {
-        <div class="facility-list">
-          @for (offer of catalog(); track offer.serviceType) {
-            <div class="card facility-item">
-              <div>
-                <strong>{{ nameFor(offer.serviceType) }}</strong>
-              </div>
-              <div class="chip-row">
-                <span>₹{{ offer.price }}</span>
-                @if (!isOwner) {
-                  <button class="primary sm" [disabled]="booking() === offer.serviceType" (click)="book(offer)">
-                    {{ booking() === offer.serviceType ? 'Booking…' : 'Book' }}
-                  </button>
-                }
-              </div>
+      <div class="card list-card">
+        @for (offer of catalog(); track offer.serviceType) {
+          <div class="list-row">
+            <span class="row-icon">{{ iconFor(offer.serviceType) }}</span>
+            <div class="row-main">
+              <strong>{{ nameFor(offer.serviceType) }}</strong>
+              <span class="hint">₹{{ offer.price }}</span>
             </div>
-          }
-        </div>
-      }
+            @if (!isOwner) {
+              <button class="primary sm" [disabled]="booking() === offer.serviceType" (click)="book(offer)">
+                {{ booking() === offer.serviceType ? 'Booking…' : 'Book' }}
+              </button>
+            }
+          </div>
+        } @empty {
+          <div class="empty-state"><span class="icon">🧰</span>This facility hasn't listed any services yet.</div>
+        }
+      </div>
+    } @else if (isOwner && facilities().length > 0) {
+      <div class="empty-state"><span class="icon">👆</span>Pick a facility above to see the services it offers.</div>
     }
 
     @if (!isOwner) {
-      <h2>My Service Bookings</h2>
-      <div class="facility-list">
+      <h2>My service bookings</h2>
+      <div class="card list-card">
         @for (b of myBookings(); track b.id) {
-          <div class="card facility-item">
-            <div>
+          <div class="list-row">
+            <span class="row-icon">{{ iconFor(b.serviceType) }}</span>
+            <div class="row-main">
               <strong>{{ nameFor(b.serviceType) }}</strong>
-              <p class="muted">{{ b.facilityName }} • ₹{{ b.amount }}</p>
+              <span class="hint">{{ b.facilityName }} · ₹{{ b.amount }}</span>
             </div>
-            <div>{{ statusLabel(b.status) }}</div>
+            <span class="badge" [class.ok]="b.status === 2" [class.warn]="b.status === 0 || b.status === 1">{{ statusLabel(b.status) }}</span>
           </div>
         } @empty {
-          <p class="muted">No service bookings yet.</p>
+          <div class="empty-state"><span class="icon">📋</span>No service bookings yet.</div>
         }
       </div>
     }
   `,
+  styles: [`label.first { margin-top: 0; }`],
 })
 export class ServicesComponent implements OnInit {
   facilities = signal<{ id: string; name: string }[]>([]);
@@ -133,6 +138,22 @@ export class ServicesComponent implements OnInit {
       next: (list) => this.catalog.set(list),
       error: () => this.catalog.set([]),
     });
+  }
+
+  iconFor(type: ValueAddedServiceType): string {
+    switch (type) {
+      case ValueAddedServiceType.CarWashExterior:
+      case ValueAddedServiceType.CarWashFull:
+      case ValueAddedServiceType.CarDetailing: return '🧽';
+      case ValueAddedServiceType.EvChargingLevel1:
+      case ValueAddedServiceType.EvChargingLevel2: return '⚡';
+      case ValueAddedServiceType.TireChange:
+      case ValueAddedServiceType.OilChange: return '🔧';
+      case ValueAddedServiceType.RoadsideAssistance: return '🛟';
+      case ValueAddedServiceType.InsuranceRenewal: return '📄';
+      case ValueAddedServiceType.FastagRecharge: return '🏷️';
+      default: return '🧰';
+    }
   }
 
   nameFor(type: ValueAddedServiceType): string {

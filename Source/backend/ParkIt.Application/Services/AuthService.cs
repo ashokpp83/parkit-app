@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 using ParkIt.Application.Abstractions;
 using ParkIt.Application.Common;
 using ParkIt.Application.Dtos;
@@ -11,25 +13,30 @@ public class AuthService
     private readonly IApplicationDbContext _db;
     private readonly ITokenService _tokens;
     private readonly IPasswordHasher _hasher;
+    private readonly IPasswordResetEmailSender _resetEmail;
 
-    public AuthService(IApplicationDbContext db, ITokenService tokens, IPasswordHasher hasher)
+    public AuthService(IApplicationDbContext db, ITokenService tokens, IPasswordHasher hasher, IPasswordResetEmailSender resetEmail)
     {
         _db = db;
         _tokens = tokens;
         _hasher = hasher;
+        _resetEmail = resetEmail;
     }
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest req, CancellationToken ct = default)
     {
         var email = req.Email.Trim().ToLowerInvariant();
-        if (await _db.Users.AnyAsync(u => u.Email == email || u.PhoneNumber == req.PhoneNumber, ct))
+        var phone = req.PhoneNumber.Trim();
+        if (req.Role is not (ParkIt.Domain.Enums.UserRole.Driver or ParkIt.Domain.Enums.UserRole.Owner))
+            throw AppException.Conflict("Please select a valid account type.");
+        if (await _db.Users.AnyAsync(u => u.Email == email || u.PhoneNumber == phone, ct))
             throw AppException.Conflict("A user with this email or phone already exists.");
 
         var user = new User
         {
             FullName = req.FullName.Trim(),
             Email = email,
-            PhoneNumber = req.PhoneNumber.Trim(),
+            PhoneNumber = phone,
             PasswordHash = _hasher.Hash(req.Password),
             Role = req.Role,
             PreferredLanguage = req.PreferredLanguage,
@@ -39,6 +46,48 @@ public class AuthService
         await _db.SaveChangesAsync(ct);
         return await IssueTokensAsync(user, ct);
     }
+
+    public async Task ForgotPasswordAsync(ForgotPasswordRequest req, CancellationToken ct = default)
+    {
+        _resetEmail.EnsureConfigured();
+        var email = req.Email.Trim().ToLowerInvariant();
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
+        if (user is null) return;
+
+        var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        _db.PasswordResetTokens.Add(new PasswordResetToken
+        {
+            UserId = user.Id,
+            TokenHash = HashResetToken(token),
+            ExpiresAt = DateTime.UtcNow.AddMinutes(30)
+        });
+        await _db.SaveChangesAsync(ct);
+        await _resetEmail.SendAsync(user.Email, token, ct);
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordRequest req, CancellationToken ct = default)
+    {
+        var hash = HashResetToken(req.Token);
+        var reset = await _db.PasswordResetTokens.Include(t => t.User)
+            .FirstOrDefaultAsync(t => t.TokenHash == hash, ct);
+        if (reset?.User is null || reset.ConsumedAt is not null || reset.ExpiresAt <= DateTime.UtcNow)
+            throw AppException.Conflict("This reset link is invalid or has expired.");
+
+        var now = DateTime.UtcNow;
+        reset.ConsumedAt = now;
+        reset.User.PasswordHash = _hasher.Hash(req.Password);
+        var otherResets = await _db.PasswordResetTokens
+            .Where(t => t.UserId == reset.UserId && t.Id != reset.Id && t.ConsumedAt == null).ToListAsync(ct);
+        foreach (var other in otherResets) other.ConsumedAt = now;
+        var refreshTokens = await _db.RefreshTokens
+            .Where(t => t.UserId == reset.UserId && t.RevokedAt == null).ToListAsync(ct);
+        foreach (var refresh in refreshTokens) refresh.RevokedAt = now;
+        try { await _db.SaveChangesAsync(ct); }
+        catch (DbUpdateConcurrencyException) { throw AppException.Conflict("This reset link has already been used."); }
+    }
+
+    private static string HashResetToken(string token) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 
     public async Task<AuthResponse> LoginAsync(LoginRequest req, CancellationToken ct = default)
     {

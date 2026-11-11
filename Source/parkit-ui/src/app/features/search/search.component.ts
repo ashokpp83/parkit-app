@@ -3,7 +3,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+import { Subscription, timeout } from 'rxjs';
 import * as L from 'leaflet';
 import { ParkingService } from '../../core/parking.service';
 import { ServiceBookingService } from '../../core/service-booking.service';
@@ -64,32 +64,25 @@ interface FacilitySearchResult {
         <div class="search-header card">
           <h1>Find parking</h1>
           <div class="row">
-            <div class="field grow autocomplete">
+            <div class="field grow">
               <label>Location or address</label>
               <div class="input-row">
                 <input
                   type="text"
                   placeholder="e.g. Anna Nagar, Chennai"
                   [(ngModel)]="query"
-                  (ngModelChange)="onQueryChange($event)"
-                  (keydown.enter)="chooseFirst()"
+                  (keydown.enter)="search()"
                   autocomplete="off" />
                 <button class="ghost" type="button" title="Use my location" (click)="useMyLocation()">📍</button>
               </div>
-              @if (suggestions().length) {
-                <ul class="suggestions">
-                  @for (p of suggestions(); track p.displayName) {
-                    <li (click)="choose(p)">{{ p.displayName }}</li>
-                  }
-                </ul>
-              }
             </div>
-            <button class="primary" (click)="search()">Search</button>
+            <button class="primary" type="button" [disabled]="loading()" (click)="search()">Search</button>
           </div>
           <p class="hint">
             @if (placeLabel()) { <span>Showing all available facilities, sorted by distance from <b>{{ placeLabel() }}</b>.</span> }
-            @else { <span>Type an address or tap the location button to use your position.</span> }
+            @else { <span>Enter an address and press Search, or tap the location button.</span> }
           </p>
+          <p class="hint">Location search data &copy; OpenStreetMap contributors.</p>
         </div>
 
         @if (loading()) { <p class="muted">Searching&hellip;</p> }
@@ -312,7 +305,6 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly allFacilitiesPageSize = 5000;
   query = '';
   placeLabel = signal<string>('');
-  suggestions = signal<GeoPlace[]>([]);
   facilities = signal<FacilitySearchResult[]>([]);
   vehicles = signal<VehicleDto[]>([]);
   loading = signal(false);
@@ -335,7 +327,10 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private map?: L.Map;
   private markers: L.Layer[] = [];
-  private query$ = new Subject<string>();
+  private locationRequest?: Subscription;
+  private facilityRequest?: Subscription;
+  private resizeObserver?: ResizeObserver;
+  private locationVersion = 0;
   private readonly handleResize = () => this.map?.invalidateSize();
   private readonly amenityLabels: Record<number, string> = {
     0: 'CCTV',
@@ -364,16 +359,6 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     this.ensureBookingWindowDefaults();
 
-    this.query$
-      .pipe(
-        debounceTime(350),
-        distinctUntilChanged(),
-        switchMap((q) => this.geo.search(q)),
-      )
-      .subscribe({
-        next: (places) => this.suggestions.set(places),
-        error: () => this.suggestions.set([]),
-      });
   }
 
   ngAfterViewInit(): void {
@@ -385,18 +370,21 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => this.map?.invalidateSize(), 0);
     setTimeout(() => this.map?.invalidateSize(), 200);
     window.addEventListener('resize', this.handleResize);
-    this.setCurrentLocation(false);
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(this.handleResize);
+      this.resizeObserver.observe(this.mapEl.nativeElement);
+    }
+    this.refreshFacilities();
   }
 
   ngOnDestroy(): void {
+    this.locationVersion++;
     window.removeEventListener('resize', this.handleResize);
+    this.resizeObserver?.disconnect();
+    this.locationRequest?.unsubscribe();
+    this.facilityRequest?.unsubscribe();
     this.map?.remove();
-  }
-
-  onQueryChange(value: string): void {
-    const q = value?.trim() ?? '';
-    if (q.length >= 3) this.query$.next(q);
-    else this.suggestions.set([]);
+    this.map = undefined;
   }
 
   choose(p: GeoPlace): void {
@@ -404,19 +392,8 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
     this.lng = p.lng;
     this.query = p.displayName;
     this.placeLabel.set(p.displayName);
-    this.suggestions.set([]);
-    this.search();
-  }
-
-  chooseFirst(): void {
-    const first = this.suggestions()[0];
-    if (first) { this.choose(first); return; }
-    const q = this.query?.trim();
-    if (!q) return;
-    this.geo.search(q, 1).subscribe((places) => {
-      if (places[0]) this.choose(places[0]);
-      else this.error.set('Could not find that location.');
-    });
+    this.map?.setView([this.lat, this.lng], 15);
+    this.refreshFacilities();
   }
 
   useMyLocation(): void {
@@ -425,13 +402,36 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
 
   search(): void {
     this.closeFacility();
-    this.refreshFacilities();
+    const q = this.query.trim();
+    this.locationVersion++;
+    this.locationRequest?.unsubscribe();
+    if (!q || q === this.placeLabel()) {
+      this.refreshFacilities();
+      return;
+    }
+    this.facilityRequest?.unsubscribe();
+    this.loading.set(true);
+    this.error.set(null);
+    this.locationRequest = this.geo.search(q, 1).pipe(timeout(12000)).subscribe({
+      next: (places) => {
+        if (places[0]) this.choose(places[0]);
+        else {
+          this.loading.set(false);
+          this.error.set('Could not find that location. Try a more specific address.');
+        }
+      },
+      error: () => {
+        this.loading.set(false);
+        this.error.set('Location search is unavailable. Please try again.');
+      },
+    });
   }
 
   private refreshFacilities(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.parking.search(this.lat, this.lng, this.allFacilitiesRadiusKm, 1, this.allFacilitiesPageSize).subscribe({
+    this.facilityRequest?.unsubscribe();
+    this.facilityRequest = this.parking.search(this.lat, this.lng, this.allFacilitiesRadiusKm, 1, this.allFacilitiesPageSize).pipe(timeout(20000)).subscribe({
       next: (r) => {
         this.facilities.set(this.toFacilities(r.items));
         this.loading.set(false);
@@ -739,28 +739,28 @@ export class SearchComponent implements OnInit, AfterViewInit, OnDestroy {
   private setCurrentLocation(showError: boolean): void {
     if (!navigator.geolocation) {
       if (showError) this.error.set('Geolocation is not available in this browser.');
-      this.search();
       return;
     }
+    const version = ++this.locationVersion;
+    this.locationRequest?.unsubscribe();
     if (showError) this.error.set(null);
+    this.loading.set(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        if (version !== this.locationVersion) return;
         this.lat = pos.coords.latitude;
         this.lng = pos.coords.longitude;
-        this.suggestions.set([]);
-        this.geo.reverse(this.lat, this.lng).subscribe({
-          next: (p) => {
-            this.query = p.displayName;
-            this.placeLabel.set(p.displayName);
-          },
-          error: () => this.placeLabel.set('your location'),
-        });
-        this.search();
+        this.query = '';
+        this.placeLabel.set('your location');
+        this.map?.setView([this.lat, this.lng], 15);
+        this.refreshFacilities();
       },
       () => {
+        if (version !== this.locationVersion) return;
+        this.loading.set(false);
         if (showError) this.error.set('Could not get your location. Allow location access or type an address.');
-        this.search();
       },
+      { timeout: 10000, maximumAge: 60000 },
     );
   }
 }

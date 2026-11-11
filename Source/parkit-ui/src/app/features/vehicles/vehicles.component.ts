@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, ElementRef, ViewChild, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ParkingService } from '../../core/parking.service';
@@ -10,37 +10,45 @@ import { UpsertVehicleRequest, VehicleDto, VehicleType } from '../../core/models
   imports: [FormsModule, RouterLink],
   template: `
     <a class="back-link" routerLink="/search">&larr; Back to Find parking</a>
+    <div class="page-head">
+      <div>
+        <h1>My vehicles</h1>
+        <p class="hint">Pick the right one while booking a slot.</p>
+      </div>
+    </div>
     <div class="card">
-      <h1>My vehicles</h1>
-      <p class="muted">Add every vehicle you own so you can pick the right one while booking a slot.</p>
-
       @if (vehicles().length === 0) {
-        <p class="muted">No vehicles added yet.</p>
+        <div class="empty-state"><span class="icon">🚗</span>No vehicles added yet.</div>
       } @else {
         <div class="facility-list">
           @for (v of vehicles(); track v.id) {
-            <div class="facility-item">
-              <div>
-                <h3>{{ v.registrationNumber }}</h3>
-                <p class="meta">{{ vehicleTypeLabel(v.type) }}</p>
+            <div class="facility-item vehicle-item">
+              <div class="vehicle-info">
+                <span class="vehicle-icon">{{ v.type === VehicleType.TwoWheeler ? '🏍️' : (v.type === VehicleType.EV ? '⚡' : '🚗') }}</span>
+                <div>
+                  <h3>{{ v.registrationNumber }}</h3>
+                  <p class="meta">{{ vehicleTypeLabel(v.type) }}</p>
+                </div>
               </div>
               <span class="badge" [class.ok]="v.isVerified" [class.warn]="!v.isVerified">
                 {{ v.isVerified ? 'Verified' : 'Unverified' }}
               </span>
-              <button class="ghost sm" type="button" (click)="startEdit(v)">Edit</button>
-              <button class="ghost sm" type="button" (click)="remove(v)">Delete</button>
+              <div class="card-actions">
+                <button class="ghost sm" type="button" (click)="startEdit(v)">Edit</button>
+                <button class="ghost sm" type="button" (click)="remove(v)">Delete</button>
+              </div>
             </div>
           }
         </div>
       }
     </div>
 
-    <div class="card">
+    <div class="card" #formCard>
       <h2>{{ editingId() ? 'Edit vehicle' : 'Add vehicle' }}</h2>
       <div class="owner-grid">
         <div>
           <label>Registration number</label>
-          <input [(ngModel)]="form.registrationNumber" placeholder="TN 09 AB 1234" />
+          <input [(ngModel)]="form.registrationNumber" placeholder="TN 09 AB 1234" maxlength="20" />
         </div>
         <div>
           <label>Vehicle type</label>
@@ -70,8 +78,20 @@ import { UpsertVehicleRequest, VehicleDto, VehicleType } from '../../core/models
       </div>
     </div>
   `,
+  styles: [`
+    .card h2 { margin-top: 0; }
+    .vehicle-item { align-items: center; }
+    .vehicle-info { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+    .vehicle-icon { display: grid; place-items: center; width: 42px; height: 42px; flex: none; border-radius: 12px; background: var(--surface); font-size: 20px; }
+    .vehicle-item .badge { align-self: center; }
+    .vehicle-item .card-actions { margin-top: 0; }
+    @media (max-width: 768px) {
+      .vehicle-item .card-actions { flex: 1 1 100%; }
+    }
+  `],
 })
 export class VehiclesComponent {
+  @ViewChild('formCard') private formCard?: ElementRef<HTMLElement>;
   readonly VehicleType = VehicleType;
   vehicles = signal<VehicleDto[]>([]);
   editingId = signal<string | null>(null);
@@ -105,6 +125,7 @@ export class VehiclesComponent {
     this.form = { registrationNumber: v.registrationNumber, type: v.type, length: v.length, width: v.width, height: v.height };
     this.error.set(null);
     this.success.set(null);
+    this.formCard?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   cancelEdit(): void {
@@ -132,7 +153,7 @@ export class VehiclesComponent {
       },
       error: (e) => {
         this.loading.set(false);
-        this.error.set(e?.error?.error?.message ?? 'Could not save vehicle.');
+        this.error.set(this.errorMessage(e, 'Could not save vehicle.'));
       },
     });
   }
@@ -140,15 +161,21 @@ export class VehiclesComponent {
   remove(v: VehicleDto): void {
     this.parking.deleteVehicle(v.id).subscribe({
       next: () => this.vehicles.update((list) => list.filter((x) => x.id !== v.id)),
-      error: (e) => this.error.set(e?.error?.error?.message ?? 'Could not delete vehicle.'),
+      error: (e) => this.error.set(this.errorMessage(e, 'Could not delete vehicle.')),
     });
   }
 
   private load(): void {
     this.parking.vehicles().subscribe({
       next: (v) => this.vehicles.set(v),
-      error: () => this.vehicles.set([]),
+      error: (e) => this.error.set(this.errorMessage(e, 'Could not load vehicles.')),
     });
+  }
+
+  private errorMessage(error: { status?: number; message?: string; error?: { error?: { message?: string }; title?: string } }, fallback: string): string {
+    if (error.status === 401) return 'Your session has expired. Please sign in again.';
+    if (error.status === 0) return 'Cannot reach the server. Check your connection and try again.';
+    return error.error?.error?.message ?? error.error?.title ?? error.message ?? fallback;
   }
 
   private emptyForm(): UpsertVehicleRequest {

@@ -18,6 +18,7 @@ import { UserRole } from './core/models';
             <a routerLink="/vehicles" routerLinkActive="active">Vehicles</a>
           }
           @if (auth.user()?.role === UserRole.Owner) {
+            <a routerLink="/owner" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
             <a routerLink="/owner/facilities" routerLinkActive="active">Facilities</a>
             <a routerLink="/owner/bookings" routerLinkActive="active">Booking History</a>
           }
@@ -36,11 +37,15 @@ import { UserRole } from './core/models';
         @if (auth.user()?.role === UserRole.Driver) {
           <a routerLink="/search" routerLinkActive="active"><span>🔍</span>Find</a>
           <a routerLink="/bookings" routerLinkActive="active"><span>📅</span>Bookings</a>
+          <a routerLink="/vehicles" routerLinkActive="active"><span>🚗</span>Vehicles</a>
         }
         @if (auth.user()?.role === UserRole.Owner) {
+          <a routerLink="/owner" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><span>📊</span>Dashboard</a>
           <a routerLink="/owner/facilities" routerLinkActive="active"><span>🏢</span>Facilities</a>
+          <a routerLink="/owner/bookings" routerLinkActive="active"><span>📋</span>History</a>
         }
         <a routerLink="/payments" routerLinkActive="active"><span>💳</span>Payments</a>
+        <a routerLink="/services" routerLinkActive="active"><span>🧰</span>Services</a>
       </nav>
     }
   `,

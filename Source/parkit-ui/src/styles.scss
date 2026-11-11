@@ -40,7 +40,7 @@ body {
 .topbar nav a.active, .topbar nav a:hover { color: var(--text); background: var(--surface-2); }
 .topbar .user { display: flex; align-items: center; gap: 12px; color: var(--muted); }
 
-.container { max-width: 900px; margin: 0 auto; padding: 28px 20px 60px; }
+.container { width: 100%; max-width: 900px; min-width: 0; margin: 0 auto; padding: 28px 20px 60px; }
 
 h1 { font-size: 26px; margin: 0 0 4px; }
 h3 { margin: 0 0 4px; font-size: 17px; }
@@ -52,9 +52,16 @@ h3 { margin: 0 0 4px; font-size: 17px; }
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 14px; padding: 20px; margin-bottom: 16px;
 }
-.auth-card { max-width: 420px; margin: 48px auto; }
+.auth-card { width: 100%; max-width: 420px; margin: 48px auto; }
 .auth-wrap { max-width: 420px; margin: 48px auto 0; }
 .auth-wrap .auth-card { margin: 8px auto 0; }
+.password-field { position: relative; }
+.password-field input { padding-right: 50px; }
+.password-field .password-toggle {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  width: 40px; min-height: 40px; padding: 0; margin: 0;
+  background: transparent; border: 0; cursor: pointer; font-size: 19px;
+}
 
 label { display: block; color: var(--muted); font-size: 13px; margin: 12px 0 6px; }
 input:not([type="checkbox"]):not([type="radio"]), select {
@@ -616,8 +623,29 @@ button.compare-fab {
   }
   
   .container {
-    padding: 16px 12px 80px;
+    padding: 16px 12px calc(80px + env(safe-area-inset-bottom, 0px));
     max-width: 100%;
+  }
+
+  .auth-card {
+    margin-top: 16px;
+    margin-bottom: 16px;
+  }
+
+  .auth-wrap {
+    margin-top: 16px;
+  }
+
+  .topbar .user {
+    min-width: 0;
+    margin-left: auto;
+  }
+
+  .topbar .user span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -692,9 +720,9 @@ button.compare-fab {
   right: 0;
   background: var(--surface);
   border-top: 1px solid var(--border);
-  padding: max(0px, env(safe-area-inset-bottom));
+  padding: 0 8px env(safe-area-inset-bottom, 0px);
   z-index: 20;
-  height: 56px;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (max-width: 768px) {
@@ -702,6 +730,8 @@ button.compare-fab {
     display: flex;
     justify-content: space-around;
     align-items: center;
+    padding-left: max(8px, env(safe-area-inset-left, 0px));
+    padding-right: max(8px, env(safe-area-inset-right, 0px));
   }
   
   .bottom-nav a {
@@ -810,4 +840,146 @@ button.compare-fab {
   * {
     scroll-behavior: smooth;
   }
+}
+
+/* ============================================ */
+/* MOBILE UX LAYER (shared by all pages)        */
+/* ============================================ */
+h2 { font-size: 19px; margin: 22px 0 10px; }
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.page-head h1 { margin: 0; }
+.page-head p { margin: 2px 0 0; }
+.page-head .primary { width: auto; margin: 0; }
+.card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.card-actions button { margin: 0; }
+.status-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.detail-list { display: grid; gap: 4px; margin-top: 6px; }
+.empty-state { text-align: center; padding: 28px 16px; color: var(--muted); }
+.empty-state .icon { font-size: 34px; display: block; margin-bottom: 8px; }
+.empty-state a { color: var(--primary); }
+a { color: #7fa4ff; }
+
+/* Photo actions must be reachable without hover on touch screens. */
+@media (hover: none) {
+  .photo-item .delete-btn { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  h1 { font-size: 22px; }
+  h2 { font-size: 17px; margin-top: 18px; }
+  .card { padding: 16px; border-radius: 14px; margin-bottom: 12px; }
+
+  .topbar .user span { display: none; }
+  .topbar .user button { min-height: 36px; padding: 6px 12px; }
+
+  .bottom-nav a { font-size: 10.5px; min-width: 0; }
+  .bottom-nav a span { font-size: 20px; line-height: 1; }
+  .bottom-nav a.active { color: var(--primary); font-weight: 600; }
+
+  .back-link { display: none; }
+
+  /* Card layouts: content on top, actions as full-width row below. */
+  .space .space-top > div { min-width: 0; }
+  .space .space-bottom { flex-wrap: wrap; gap: 8px 12px; }
+  .space .space-bottom button.sm { flex: 1 1 auto; }
+  .facility-item { flex-wrap: wrap; }
+  .facility-item > div:first-child { flex: 1 1 calc(100% - 110px); min-width: 0; }
+  .facility-item > button.ghost.sm,
+  .facility-item > .chip-row { flex: 1 1 0; margin-left: 0; }
+  .facility-item > .chip-row { justify-content: flex-end; align-items: center; }
+  .facility-item h3, .facility-item strong { overflow-wrap: anywhere; }
+
+  .owner-grid { grid-template-columns: 1fr; gap: 0 12px; }
+  .action-row { flex-wrap: wrap; }
+  .action-row .primary, .action-row .ghost { flex: 1 1 100%; width: 100%; }
+  .page-head .primary { min-height: 40px; padding: 8px 14px; }
+
+  .search-header .row { flex-direction: column; align-items: stretch; }
+  .search-header button.primary { width: 100%; }
+  .search-header .field { min-width: 0; }
+  .page-split-map .search-map-wrap { height: 220px !important; min-height: 220px !important; }
+  .owner-layout-map .facility-map { height: 260px; min-height: 260px; }
+  button.compare-fab { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); right: 16px; min-height: 44px; }
+
+  .hours-input { min-width: 0; flex: 1 1 100%; }
+  .chip { min-height: 34px; padding: 6px 14px; font-size: 13px; }
+  .checkbox-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .checkbox-row label { min-height: 36px; }
+
+  /* Modals become bottom sheets. */
+  .modal-card {
+    top: auto; bottom: 0; left: 0; transform: none;
+    width: 100%; max-height: 92vh; border-radius: 18px 18px 0 0;
+    padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    animation: sheet-up .22s ease-out;
+  }
+  .modal-header {
+    position: sticky; top: 0; z-index: 2; background: var(--surface);
+    padding: 18px 0 10px; margin: 0 0 4px; border-bottom: 1px solid var(--border);
+  }
+  .modal-header::before {
+    content: ''; position: absolute; top: 7px; left: 50%; width: 40px; height: 4px;
+    margin-left: -20px; border-radius: 4px; background: var(--border);
+  }
+  .modal-header h2 { margin: 0; font-size: 18px; }
+  .booking-total-row {
+    position: sticky; bottom: calc(-16px - env(safe-area-inset-bottom, 0px)); z-index: 2;
+    background: var(--surface); padding: 12px 0 16px; border-top: 1px solid var(--border);
+  }
+  .booking-total-row button.primary { flex: 1 1 100%; }
+  .compare-grid { grid-template-columns: 1fr; }
+}
+
+@keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.ghost-link {
+  display: inline-flex; align-items: center; padding: 8px 14px; border-radius: 10px;
+  border: 1px solid var(--border); color: var(--text); text-decoration: none; font-weight: 600; font-size: 14px; white-space: nowrap;
+}
+.ghost-link.primary-link { background: var(--primary); border-color: var(--primary); color: #fff; }
+.booking-card .space-top .price { white-space: nowrap; }
+details.contact { margin-top: 10px; }
+details.contact summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.pay-box { margin-top: 12px; padding-top: 4px; border-top: 1px solid var(--border); }
+.seg-tabs { display: flex; gap: 6px; padding: 4px; background: var(--surface-2); border-radius: 12px; margin-bottom: 14px; }
+.seg-tabs a, .seg-tabs button {
+  flex: 1; text-align: center; padding: 8px 10px; border-radius: 9px; color: var(--muted);
+  text-decoration: none; font-weight: 600; font-size: 14px; background: transparent; border: none; margin: 0;
+}
+.seg-tabs .active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+@media (max-width: 768px) {
+  .card-actions button { flex: 1 1 0; }
+  .seg-tabs a, .seg-tabs button { min-height: 40px; }
+}
+/* Compact list rows (payments, services, etc.) */
+.list-card { padding: 4px 16px; }
+.list-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.list-row:last-child { border-bottom: none; }
+.row-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 12px; background: var(--surface-2); font-size: 18px; }
+.row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.row-main strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-main .badge { align-self: flex-start; }
+.row-actions { display: flex; gap: 6px; flex: none; align-items: center; }
+.row-actions button.sm, .list-row > button.sm { min-height: 36px; min-width: 36px; padding: 6px 12px; font-size: 13px; margin: 0; width: auto; }
+.list-row .amount { flex: none; }
+.card, .owner-layout-map { scroll-margin-top: 72px; }
+@media (max-width: 768px) {
+  /* Find parking: search box first, then a compact map, then results. */
+  .page-split { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  .page-split-content { display: contents; }
+  .page-split-content > * { order: 1; }
+  .page-split-content > .search-header { order: -1; }
+  .page-split-map { order: 0; margin-bottom: 12px; }
+  .search-header .field.grow { flex: none; }
+  .search-header h1 { font-size: 20px; margin-bottom: 0; }
+  .search-header .hint { margin-bottom: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .results .space h3 { overflow-wrap: anywhere; }
+  .results .space .space-bottom .price { margin-right: auto; }
+  .space .space-top { flex-wrap: wrap; }
+  .space .space-top > div { flex: 1 1 170px; }
+}
+
+/* Service options inside the facility sheet: rely on grid gap, not card margins */
+.facility-list > .card.service-row {
+  margin: 0;
+  padding: 12px 14px;
 }

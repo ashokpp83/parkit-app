@@ -10,67 +10,82 @@ import { BookingDto, PaymentMethod, SavedPaymentMethodDto } from '../../core/mod
   standalone: true,
   imports: [FormsModule, DatePipe],
   template: `
-    <h1>Payments</h1>
-
-    <h2>Payment Methods</h2>
-    <div class="facility-list">
-      @for (m of methods(); track m.id) {
-        <div class="card facility-item">
-          <div>
-            <strong>{{ methodLabel(m) }}</strong>
-            @if (m.isDefault) { <span class="badge ok">Default</span> }
-          </div>
-          <div class="chip-row">
-            @if (!m.isDefault) { <button class="ghost sm" (click)="setDefault(m)">Make default</button> }
-            <button class="ghost sm" (click)="remove(m)">Remove</button>
-          </div>
-        </div>
-      } @empty {
-        <p class="muted">No saved payment methods yet.</p>
+    <div class="page-head">
+      <div>
+        <h1>Payments</h1>
+        <p class="hint">Saved methods and payment history</p>
+      </div>
+      @if (!adding()) {
+        <button class="primary sm" (click)="adding.set(true)">+ Add</button>
       }
     </div>
 
-    @if (!adding()) {
-      <button class="primary sm" (click)="adding.set(true)">+ Add Payment Method</button>
-    } @else {
-      <form class="card owner-grid" (ngSubmit)="add()">
-        <label>Type
-          <select [(ngModel)]="method" name="method">
-            <option [ngValue]="PaymentMethod.Card">Card</option>
-            <option [ngValue]="PaymentMethod.UPI">UPI</option>
-            <option [ngValue]="PaymentMethod.Wallet">Wallet</option>
-            <option [ngValue]="PaymentMethod.FASTag">FASTag</option>
-          </select>
-        </label>
+    @if (adding()) {
+      <form class="card" (ngSubmit)="add()">
+        <h3>New payment method</h3>
+        <label>Type</label>
+        <div class="seg-tabs">
+          <button type="button" [class.active]="method === PaymentMethod.Card" (click)="method = PaymentMethod.Card">Card</button>
+          <button type="button" [class.active]="method === PaymentMethod.UPI" (click)="method = PaymentMethod.UPI">UPI</button>
+          <button type="button" [class.active]="method === PaymentMethod.Wallet" (click)="method = PaymentMethod.Wallet">Wallet</button>
+          <button type="button" [class.active]="method === PaymentMethod.FASTag" (click)="method = PaymentMethod.FASTag">FASTag</button>
+        </div>
         @if (method === PaymentMethod.Card) {
-          <label>Brand <input [(ngModel)]="brand" name="brand" placeholder="Visa" /></label>
-          <label>Last 4 digits <input [(ngModel)]="last4" name="last4" maxlength="4" placeholder="4567" /></label>
-          <label>Expiry month <input type="number" [(ngModel)]="expiryMonth" name="expiryMonth" min="1" max="12" /></label>
-          <label>Expiry year <input type="number" [(ngModel)]="expiryYear" name="expiryYear" min="2024" /></label>
+          <div class="pay-grid">
+            <div><label>Brand</label><input [(ngModel)]="brand" name="brand" placeholder="Visa" /></div>
+            <div><label>Last 4 digits</label><input [(ngModel)]="last4" name="last4" maxlength="4" inputmode="numeric" placeholder="4567" /></div>
+            <div><label>Expiry month</label><input type="number" inputmode="numeric" [(ngModel)]="expiryMonth" name="expiryMonth" min="1" max="12" placeholder="MM" /></div>
+            <div><label>Expiry year</label><input type="number" inputmode="numeric" [(ngModel)]="expiryYear" name="expiryYear" min="2024" placeholder="YYYY" /></div>
+          </div>
         }
-        <div class="chip-row">
-          <button class="primary sm" type="submit">Save</button>
+        <div class="card-actions">
           <button class="ghost sm" type="button" (click)="adding.set(false)">Cancel</button>
+          <button class="primary sm" type="submit">Save method</button>
         </div>
       </form>
     }
 
-    <h2>Payment History</h2>
-    @if (loading()) { <p class="muted">Loading…</p> }
-    <div class="facility-list">
-      @for (b of paymentHistory(); track b.id) {
-        <div class="card facility-item">
-          <div>
-            <strong>{{ b.facilityName }}</strong>
-            <p class="muted">{{ b.startTime | date: 'medium' }}</p>
+    <h2>Payment methods</h2>
+    <div class="card list-card">
+      @for (m of methods(); track m.id) {
+        <div class="list-row">
+          <span class="row-icon">{{ methodIcon(m) }}</span>
+          <div class="row-main">
+            <strong>{{ methodLabel(m) }}</strong>
+            @if (m.isDefault) { <span class="badge ok">Default</span> }
           </div>
-          <div>₹{{ b.amount }}</div>
+          <div class="row-actions">
+            @if (!m.isDefault) { <button class="ghost sm" (click)="setDefault(m)">Set default</button> }
+            <button class="ghost sm" (click)="remove(m)" aria-label="Remove">✕</button>
+          </div>
         </div>
       } @empty {
-        @if (!loading()) { <p class="muted">No payments yet.</p> }
+        <div class="empty-state"><span class="icon">💳</span>No saved payment methods yet.</div>
+      }
+    </div>
+
+    <h2>Payment history</h2>
+    @if (loading()) { <p class="muted">Loading…</p> }
+    <div class="card list-card">
+      @for (b of paymentHistory(); track b.id) {
+        <div class="list-row">
+          <span class="row-icon">🅿️</span>
+          <div class="row-main">
+            <strong>{{ b.facilityName }}</strong>
+            <span class="hint">{{ b.startTime | date: 'd MMM y, h:mm a' }}</span>
+          </div>
+          <strong class="amount">₹{{ b.amount }}</strong>
+        </div>
+      } @empty {
+        @if (!loading()) { <div class="empty-state"><span class="icon">🧾</span>No payments yet.</div> }
       }
     </div>
   `,
+  styles: [`
+    .page-head .primary.sm { width: auto; margin: 0; }
+    form.card h3 { margin-bottom: 4px; }
+    .pay-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
+  `],
 })
 export class PaymentsComponent implements OnInit {
   readonly PaymentMethod = PaymentMethod;
@@ -98,6 +113,16 @@ export class PaymentsComponent implements OnInit {
       },
       error: () => this.loading.set(false),
     });
+  }
+
+  methodIcon(m: SavedPaymentMethodDto): string {
+    switch (m.method) {
+      case PaymentMethod.Card: return '💳';
+      case PaymentMethod.UPI: return '📱';
+      case PaymentMethod.Wallet: return '👛';
+      case PaymentMethod.FASTag: return '🏷️';
+      default: return '💰';
+    }
   }
 
   methodLabel(m: SavedPaymentMethodDto): string {

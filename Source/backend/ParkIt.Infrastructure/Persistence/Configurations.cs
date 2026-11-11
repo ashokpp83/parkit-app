@@ -46,6 +46,18 @@ public class RefreshTokenConfig : IEntityTypeConfiguration<RefreshToken>
     }
 }
 
+public class PasswordResetTokenConfig : IEntityTypeConfiguration<PasswordResetToken>
+{
+    public void Configure(EntityTypeBuilder<PasswordResetToken> e)
+    {
+        e.HasKey(x => x.Id);
+        e.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+        e.Property(x => x.ConsumedAt).IsConcurrencyToken();
+        e.HasIndex(x => x.TokenHash).IsUnique();
+        e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 public class WalletConfig : IEntityTypeConfiguration<Wallet>
 {
     public void Configure(EntityTypeBuilder<Wallet> e)

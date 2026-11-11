@@ -11,54 +11,71 @@ import { BookingDto, PaymentMethod, PaymentStatus } from '../../core/models';
   imports: [DatePipe, RouterLink, FormsModule],
   template: `
     <a class="back-link" routerLink="/search">&larr; Back to Find parking</a>
-    <h1>My bookings</h1>
+    <div class="page-head">
+      <div>
+        <h1>My bookings</h1>
+        <p class="hint">{{ bookings().length }} booking{{ bookings().length === 1 ? '' : 's' }}</p>
+      </div>
+      <a class="ghost-link" routerLink="/search">+ New</a>
+    </div>
     @if (loading()) { <p class="muted">Loading…</p> }
     <div class="results">
       @for (b of bookings(); track b.id) {
-        <div class="card space">
+        <div class="card space booking-card">
           <div class="space-top">
             <div>
               <h3>{{ b.facilityName }}</h3>
-              <p class="meta">Slot {{ b.slotLabel }} · {{ b.vehicleRegistration }}</p>
-              <p class="meta">Facility owner: {{ b.ownerName || 'N/A' }} · {{ b.ownerPhoneNumber || 'N/A' }}</p>
-              <p class="meta">Email: {{ b.ownerEmail || 'N/A' }}</p>
-              <p class="muted">{{ b.startTime | date: 'short' }} → {{ b.endTime | date: 'short' }}</p>
+              <p class="meta">🕒 {{ b.startTime | date: 'd MMM, h:mm a' }} → {{ b.endTime | date: 'h:mm a' }}</p>
+              <p class="meta">🅿️ Slot {{ b.slotLabel }} · 🚗 {{ b.vehicleRegistration }}</p>
             </div>
-            <span class="badge" [class.guaranteed]="b.isGuaranteed">{{ b.isGuaranteed ? 'Guaranteed' : 'Reserved' }}</span>
-          </div>
-          <div class="space-bottom">
             <span class="price">₹{{ b.amount }}</span>
-            <span class="security">{{ statusLabel(b.status) }}</span>
+          </div>
+          <div class="status-row">
+            <span class="badge" [class.guaranteed]="b.isGuaranteed">{{ b.isGuaranteed ? 'Guaranteed' : 'Reserved' }}</span>
+            <span class="badge">{{ statusLabel(b.status) }}</span>
             @if (b.paymentStatus !== undefined && b.paymentStatus !== null) {
               <span class="badge" [class.ok]="b.paymentStatus === PaymentStatus.Captured" [class.warn]="b.paymentStatus !== PaymentStatus.Captured">
                 {{ paymentStatusLabel(b.paymentStatus) }}
               </span>
             }
             @if (b.qrToken) { <code class="qr">QR {{ b.qrToken.slice(0, 8) }}</code> }
-            @if (needsPayment(b)) {
-              <button class="primary sm" (click)="startPay(b)">Pay now</button>
-            }
-            @if (b.status !== 4 && b.status !== 3) {
-              <button class="ghost sm" (click)="cancel(b)">Cancel</button>
-            }
           </div>
+          <details class="contact">
+            <summary>Facility contact</summary>
+            <p class="meta">{{ b.ownerName || 'N/A' }} · {{ b.ownerPhoneNumber || 'N/A' }}</p>
+            <p class="meta">{{ b.ownerEmail || 'N/A' }}</p>
+          </details>
           @if (payingId() === b.id) {
-            <div class="space-bottom hours-row">
-              <label class="hours-input">
-                Payment method
-                <select [(ngModel)]="payMethod" name="payMethod">
-                  <option [ngValue]="PaymentMethod.UPI">UPI</option>
-                  <option [ngValue]="PaymentMethod.Card">Card</option>
-                  <option [ngValue]="PaymentMethod.Wallet">Wallet</option>
-                </select>
-              </label>
-              <button class="primary sm" (click)="confirmPay(b)">Pay ₹{{ b.amount }}</button>
-              <button class="ghost sm" (click)="payingId.set(null)">Cancel</button>
+            <div class="pay-box">
+              <label>Payment method</label>
+              <select [(ngModel)]="payMethod" name="payMethod">
+                <option [ngValue]="PaymentMethod.UPI">UPI</option>
+                <option [ngValue]="PaymentMethod.Card">Card</option>
+                <option [ngValue]="PaymentMethod.Wallet">Wallet</option>
+              </select>
+              <div class="card-actions">
+                <button class="ghost sm" (click)="payingId.set(null)">Back</button>
+                <button class="primary sm" (click)="confirmPay(b)">Pay ₹{{ b.amount }}</button>
+              </div>
+            </div>
+          } @else if (needsPayment(b) || (b.status !== 4 && b.status !== 3)) {
+            <div class="card-actions">
+              @if (b.status !== 4 && b.status !== 3) {
+                <button class="ghost sm" (click)="cancel(b)">Cancel booking</button>
+              }
+              @if (needsPayment(b)) {
+                <button class="primary sm" (click)="startPay(b)">Pay now</button>
+              }
             </div>
           }
         </div>
       } @empty {
-        @if (!loading()) { <p class="muted">No bookings yet.</p> }
+        @if (!loading()) {
+          <div class="card empty-state">
+            <span class="icon">🅿️</span>
+            No bookings yet. <a routerLink="/search">Find parking near you</a>
+          </div>
+        }
       }
     </div>
   `,

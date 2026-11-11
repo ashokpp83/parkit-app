@@ -10,33 +10,38 @@ import { AuthResponse, UserRole } from '../../core/models';
   imports: [FormsModule, RouterLink],
   template: `
     <form class="card auth-card" (ngSubmit)="submit()">
+      <div class="auth-brand"><span class="logo">P</span></div>
       <h1>Welcome back</h1>
-      <p class="muted">Sign in as a car owner or a facility owner.</p>
-      <label>Login as</label>
-      <select [(ngModel)]="loginAs" (ngModelChange)="updateDemoCredentials()" name="loginAs">
-        <option [ngValue]="'car-owner'">Car owner</option>
-        <option [ngValue]="'facility-owner'">Facility owner</option>
-      </select>
+      <p class="muted">Sign in to find or manage parking.</p>
+      <label>I am a</label>
+      <div class="seg-tabs">
+        <button type="button" [class.active]="loginAs === 'car-owner'" (click)="loginAs = 'car-owner'; updateDemoCredentials()">🚗 Car owner</button>
+        <button type="button" [class.active]="loginAs === 'facility-owner'" (click)="loginAs = 'facility-owner'; updateDemoCredentials()">🏢 Facility owner</button>
+      </div>
 
-      <div class="chip-row">
-        <button type="button" class="chip" [class.active]="method() === 'password'" (click)="method.set('password')">Password</button>
-        <button type="button" class="chip" [class.active]="method() === 'otp'" (click)="method.set('otp')">OTP</button>
+      <div class="seg-tabs method-tabs">
+        <button type="button" [class.active]="method() === 'password'" (click)="method.set('password')">Password</button>
+        <button type="button" [class.active]="method() === 'otp'" (click)="method.set('otp')">OTP</button>
       </div>
 
       @if (method() === 'password') {
         <label>Email or phone</label>
         <input [(ngModel)]="emailOrPhone" name="emailOrPhone" placeholder="driver@parkit.app" autocomplete="username" />
         <label>Password</label>
-        <input type="password" [(ngModel)]="password" name="password" placeholder="Passw0rd!" autocomplete="current-password" />
+        <div class="password-field">
+          <input [type]="showPassword() ? 'text' : 'password'" [(ngModel)]="password" name="password" placeholder="Passw0rd!" autocomplete="current-password" />
+          <button type="button" class="password-toggle" [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'" [attr.aria-pressed]="showPassword()" (click)="showPassword.set(!showPassword())">👁</button>
+        </div>
+        <a routerLink="/forgot-password">Forgot password?</a>
       } @else {
         <label>Phone number</label>
-        <input [(ngModel)]="phoneNumber" name="phoneNumber" placeholder="+919000000001" autocomplete="tel" />
-        <button type="button" class="ghost sm" [disabled]="otpSending()" (click)="sendOtp()">
+        <input [(ngModel)]="phoneNumber" name="phoneNumber" placeholder="+919000000001" autocomplete="tel" inputmode="tel" />
+        <button type="button" class="ghost sm otp-btn" [disabled]="otpSending()" (click)="sendOtp()">
           {{ otpSending() ? 'Sending…' : 'Send OTP' }}
         </button>
         @if (otpSent()) {
           <label>OTP code</label>
-          <input [(ngModel)]="otpCode" name="otpCode" placeholder="6-digit code" autocomplete="one-time-code" />
+          <input [(ngModel)]="otpCode" name="otpCode" placeholder="6-digit code" autocomplete="one-time-code" inputmode="numeric" />
           @if (devCode()) { <p class="hint">Dev OTP: {{ devCode() }}</p> }
         }
       }
@@ -51,10 +56,19 @@ import { AuthResponse, UserRole } from '../../core/models';
       }
     </form>
   `,
+  styles: [`
+    .auth-brand { display: flex; justify-content: center; margin-bottom: 10px; }
+    .auth-brand .logo { width: 48px; height: 48px; font-size: 24px; border-radius: 14px; }
+    h1, h1 + .muted { text-align: center; }
+    .method-tabs { margin-top: 14px; }
+    .otp-btn { width: 100%; margin-top: 10px; }
+    .auth-card > p.muted, .auth-card > p.hint { text-align: center; }
+  `],
 })
 export class LoginComponent {
   loginAs: 'car-owner' | 'facility-owner' = 'car-owner';
   method = signal<'password' | 'otp'>('password');
+  showPassword = signal(false);
   emailOrPhone = 'driver1@parkit.app';
   password = 'Passw0rd!';
   phoneNumber = '';

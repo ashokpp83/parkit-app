@@ -43,6 +43,15 @@ public class RefreshToken : BaseEntity
     public bool IsActive => RevokedAt is null && DateTime.UtcNow < ExpiresAt;
 }
 
+public class PasswordResetToken : BaseEntity
+{
+    public Guid UserId { get; set; }
+    public User? User { get; set; }
+    public string TokenHash { get; set; } = string.Empty;
+    public DateTime ExpiresAt { get; set; }
+    public DateTime? ConsumedAt { get; set; }
+}
+
 public class Wallet : BaseEntity
 {
     public Guid UserId { get; set; }

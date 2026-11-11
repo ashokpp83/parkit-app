@@ -12,6 +12,7 @@ public interface IApplicationDbContext
     DbSet<User> Users { get; }
     DbSet<Vehicle> Vehicles { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<PasswordResetToken> PasswordResetTokens { get; }
     DbSet<Wallet> Wallets { get; }
     DbSet<OtpChallenge> OtpChallenges { get; }
     DbSet<ParkingProvider> ParkingProviders { get; }

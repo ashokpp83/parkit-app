@@ -24,9 +24,28 @@ Jwt__Issuer=ParkIt
 Jwt__Audience=ParkItClients
 Jwt__Key=<random-secret-at-least-32-characters>
 FrontendOrigin=https://your-pwa-domain.example
+Smtp__Host=<smtp-host>
+Smtp__Port=587
+Smtp__Username=<smtp-username>
+Smtp__Password=<smtp-password>
+Smtp__From=<verified-sender-email>
 ```
 
 The API listens on port `8080` and exposes `GET /health`.
+
+Password recovery requires an SMTP provider supporting STARTTLS and a publicly reachable HTTPS
+`FrontendOrigin` serving the Angular app with SPA fallback. Configure SMTP credentials as secrets
+on the host, never in the repository. Reset links expire after 30 minutes and can be used once.
+The API applies the EF Core password-reset migration at startup. Production requires the PostgreSQL
+connection string; the in-memory development database is not persistent.
+
+Location search uses the public Nominatim service through a cached, rate-limited API proxy. Review its
+[usage policy](https://operations.osmfoundation.org/policies/nominatim/) before deployment:
+autocomplete is prohibited, traffic from the entire application is limited to one request per
+second, and applications must be able to switch provider. Run **only one API instance** while
+using this proxy: its rate limit and cache are local to the process. For multiple instances, use
+a shared rate limiter/cache or a different provider. Set `Geocoding__BaseUrl` to an alternative
+Nominatim-compatible HTTPS service if needed. Addresses are sent to the configured provider.
 
 ## Build and deploy
 
